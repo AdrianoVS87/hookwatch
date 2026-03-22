@@ -69,6 +69,14 @@ hookwatch/
 └── LICENSE
 ```
 
+## Model Routing (dual-provider)
+
+- **Default:** `anthropic/claude-sonnet-4-6` — Java implementation, React frontend, tests, features
+- **[OPUS]:** `anthropic/claude-opus-4-6` — architecture, planning, decomposition, code review
+- **[CODEX]:** `openai-codex/gpt-5.3-codex` — Docker, CI/CD, Makefile, shell scripts, terminal ops, focused bug fixes
+- **[HAIKU]:** `anthropic/claude-haiku-4-5` — commit messages, formatting, trivial tasks
+- **Auto-fallback:** when Claude hits rate limit, route to Codex automatically
+
 ## Development Notes
 
 - Always run tests before committing
