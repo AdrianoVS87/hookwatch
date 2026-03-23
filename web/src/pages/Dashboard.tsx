@@ -6,11 +6,17 @@ import TraceTable from '../components/TraceTable'
 import MetricsBar from '../components/MetricsBar'
 
 export default function Dashboard() {
-  const { agents, selectedAgentId, loading: agentsLoading, loadAgents, selectAgent, isDemo } = useAgentStore()
+  const { agents, selectedAgentId, loading: agentsLoading, loadAgents, selectAgent } = useAgentStore()
   const { traces, loading: tracesLoading, loadTraces, selectTrace } = useTraceStore()
 
   useEffect(() => { loadAgents() }, [loadAgents])
-  useEffect(() => { if (selectedAgentId) loadTraces(selectedAgentId) }, [selectedAgentId, loadTraces])
+  useEffect(() => {
+    if (!selectedAgentId) return
+    loadTraces(selectedAgentId)
+    // Auto-refresh every 30s to pick up new traces from live agent
+    const interval = setInterval(() => loadTraces(selectedAgentId), 30_000)
+    return () => clearInterval(interval)
+  }, [selectedAgentId, loadTraces])
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
@@ -23,13 +29,17 @@ export default function Dashboard() {
           <h1 style={{ fontSize: 20, fontWeight: 600, color: 'var(--text-primary)', letterSpacing: '-0.02em', margin: 0 }}>
             Dashboard
           </h1>
-          {isDemo && (
+          {selectedAgentId && (
             <span style={{
+              display: 'inline-flex', alignItems: 'center', gap: 5,
               fontSize: 10, fontWeight: 600, letterSpacing: '0.08em',
               textTransform: 'uppercase', padding: '2px 7px', borderRadius: 4,
-              background: 'rgba(245,158,11,0.12)', color: '#F59E0B',
-              border: '1px solid rgba(245,158,11,0.2)',
-            }}>Demo data</span>
+              background: 'rgba(16,185,129,0.1)', color: '#10B981',
+              border: '1px solid rgba(16,185,129,0.2)',
+            }}>
+              <span style={{ width: 5, height: 5, borderRadius: '50%', background: '#10B981', animation: 'pulse 2s infinite' }} />
+              Live
+            </span>
           )}
         </div>
 
