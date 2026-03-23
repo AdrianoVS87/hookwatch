@@ -102,7 +102,11 @@ public class DataSeeder implements CommandLineRunner {
             llmSpan.setOutput(cfg.status() == Trace.Status.FAILED ? null : "Here is my analysis of the code...");
             llmSpan.setError(cfg.status() == Trace.Status.FAILED ? "Rate limit exceeded after 3 retries" : null);
 
-            saved.setSpans(List.of(toolSpan, llmSpan));
+            // Mutable list required — Hibernate may call clear() during merge operations
+            List<Span> spans = new ArrayList<>();
+            spans.add(toolSpan);
+            spans.add(llmSpan);
+            saved.setSpans(spans);
             traceRepository.save(saved);
         }
 
