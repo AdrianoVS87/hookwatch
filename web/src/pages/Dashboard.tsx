@@ -1,5 +1,6 @@
 import { useEffect } from 'react'
 import { motion } from 'framer-motion'
+import { Webhook } from 'lucide-react'
 import { useAgentStore } from '../stores/useAgentStore'
 import { useTraceStore } from '../stores/useTraceStore'
 import TraceTable from '../components/TraceTable'
@@ -81,7 +82,7 @@ export default function Dashboard() {
       <main style={{ flex: 1, overflow: 'auto' }}>
         {tracesLoading && <LoadingState />}
         {!tracesLoading && !selectedAgentId && (
-          <EmptyState title="Select an agent" subtitle="Choose an agent above to view its traces" />
+          <EmptyState title="Select an agent to view traces" subtitle="Use ⌘K to search" showIcon />
         )}
         {!tracesLoading && selectedAgentId && traces.length === 0 && (
           <EmptyState title="No traces yet" subtitle="Traces will appear here once the agent runs" />
@@ -117,11 +118,15 @@ function LoadingState() {
   )
 }
 
-function EmptyState({ title, subtitle }: { title: string; subtitle: string }) {
+function EmptyState({ title, subtitle, showIcon }: { title: string; subtitle: string; showIcon?: boolean }) {
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '50%', gap: 6 }}>
-      <p style={{ fontSize: 14, fontWeight: 500, color: 'var(--text-secondary)', margin: 0 }}>{title}</p>
-      <p style={{ fontSize: 12, color: 'var(--text-tertiary)', margin: 0 }}>{subtitle}</p>
+    <div style={{
+      display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+      height: '50%', gap: 12, color: 'var(--text-tertiary)',
+    }}>
+      {showIcon && <Webhook size={32} strokeWidth={1} style={{ opacity: 0.4 }} />}
+      <p style={{ fontSize: 13, fontWeight: 500, color: 'var(--text-secondary)', margin: 0 }}>{title}</p>
+      <p style={{ fontSize: 11, margin: 0, opacity: 0.6 }}>{subtitle}</p>
     </div>
   )
 }

@@ -122,7 +122,8 @@ export default function CommandPalette() {
                       style={{
                         display: 'flex', alignItems: 'center', gap: 10,
                         width: '100%', padding: '9px 16px', border: 'none',
-                        background: i === selectedIndex ? 'var(--surface-2)' : 'transparent',
+                        background: i === selectedIndex ? 'rgba(99,102,241,0.15)' : 'transparent',
+                        borderLeft: i === selectedIndex ? '2px solid var(--accent)' : '2px solid transparent',
                         cursor: 'pointer', textAlign: 'left', transition: 'background 0.1s',
                       }}
                       onMouseEnter={() => setSelectedIndex(i)}

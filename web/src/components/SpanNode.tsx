@@ -13,8 +13,8 @@ export interface SpanNodeData extends Record<string, unknown> {
 
 const TYPE_CONFIG: Record<SpanType, { color: string; bg: string; label: string }> = {
   LLM_CALL:  { color: '#6366F1', bg: 'rgba(99,102,241,0.08)',  label: 'LLM' },
-  TOOL_CALL: { color: '#10B981', bg: 'rgba(16,185,129,0.08)',  label: 'Tool' },
-  RETRIEVAL: { color: '#F59E0B', bg: 'rgba(245,158,11,0.08)',  label: 'Retrieval' },
+  TOOL_CALL: { color: '#F59E0B', bg: 'rgba(245,158,11,0.08)',  label: 'Tool' },
+  RETRIEVAL: { color: '#10B981', bg: 'rgba(16,185,129,0.08)',  label: 'Retrieval' },
   CUSTOM:    { color: '#8B95A1', bg: 'rgba(139,149,161,0.08)', label: 'Custom' },
 }
 
@@ -32,12 +32,13 @@ export const SpanNode = memo(({ data, selected }: NodeProps) => {
     <div style={{
       background: bgColor,
       border: `1px solid ${borderColor}`,
+      borderLeft: `3px solid ${isFailed ? '#EF4444' : cfg.color}`,
       borderRadius: 10,
       padding: '10px 14px',
       minWidth: 180,
       maxWidth: 260,
       animation: isRunning ? 'pulse 2s infinite' : 'none',
-      boxShadow: selected ? `0 0 0 3px rgba(99,102,241,0.2)` : '0 2px 12px rgba(0,0,0,0.3)',
+      boxShadow: selected ? '0 0 0 2px var(--accent)' : 'var(--shadow-sm)',
       transition: 'box-shadow 0.15s ease',
     }}>
       <Handle type="target" position={Position.Top}

@@ -80,9 +80,9 @@ export default function TraceTable({ traces, onSelect }: Props) {
   )
 
   return (
-    <div style={{ overflow: 'auto' }}>
+    <div style={{ overflowX: 'auto' }}>
       <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-        <thead>
+        <thead style={{ position: 'sticky', top: 0, zIndex: 1, background: 'var(--surface)' }}>
           <tr style={{ borderBottom: '1px solid var(--border)' }}>
             <Col label="Status" col="status" width={120} />
             <StaticCol label="Spans" width={70} />
@@ -102,9 +102,12 @@ export default function TraceTable({ traces, onSelect }: Props) {
                 animate={{ opacity: 1 }}
                 transition={{ delay: i * 0.02, duration: 0.15 }}
                 onClick={() => onSelect(trace.id)}
-                style={{ borderBottom: '1px solid var(--border)', cursor: 'pointer' }}
+                style={{
+                  borderBottom: '1px solid var(--border)', cursor: 'pointer',
+                  background: i % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.01)',
+                }}
                 onMouseEnter={(e) => { (e.currentTarget as HTMLTableRowElement).style.background = 'var(--surface-2)' }}
-                onMouseLeave={(e) => { (e.currentTarget as HTMLTableRowElement).style.background = 'transparent' }}
+                onMouseLeave={(e) => { (e.currentTarget as HTMLTableRowElement).style.background = i % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.01)' }}
               >
                 <td style={{ padding: '12px 16px' }}>
                   <span style={{
