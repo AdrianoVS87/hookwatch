@@ -69,13 +69,25 @@ hookwatch/
 └── LICENSE
 ```
 
-## Model Routing (dual-provider)
+## Model Routing (live in OpenClaw)
 
-- **Default:** `anthropic/claude-sonnet-4-6` — Java implementation, React frontend, tests, features
-- **[OPUS]:** `anthropic/claude-opus-4-6` — architecture, planning, decomposition, code review
-- **[CODEX]:** `openai-codex/gpt-5.3-codex` — Docker, CI/CD, Makefile, shell scripts, terminal ops, focused bug fixes
-- **[HAIKU]:** `anthropic/claude-haiku-4-5` — commit messages, formatting, trivial tasks
-- **Auto-fallback:** when Claude hits rate limit, route to Codex automatically
+Aliases: `/model opus`, `/model sonnet`, `/model codex`, `/model haiku`
+
+- **Sonnet 4.6 (default):** Java implementation, React frontend, tests, features
+- **Codex 5.3 (1st fallback + manual switch):** Docker, CI/CD, Makefile, scripts, terminal ops, focused bug fixes
+- **Opus 4.6 (2nd fallback + manual switch):** architecture, planning, decomposition, code review, complex debugging
+- **Haiku 4.5 (manual switch):** commit messages, formatting, trivial tasks
+
+Switch on-the-fly: `/model codex` before Docker tasks, `/model opus` before architecture, `/model sonnet` to go back
+
+Auto-fallback chain: Sonnet → Codex → Opus (rate limit cascade)
+
+## Agent Teams (Swarms)
+
+- Enabled via `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1`
+- Use for multi-layer parallel work (backend + frontend + infra simultaneously)
+- Lead agent plans with Opus, workers execute with Sonnet/Codex
+- Single agent for focused single-layer work
 
 ## Development Notes
 
