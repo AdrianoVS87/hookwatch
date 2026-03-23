@@ -5,8 +5,11 @@ import com.hookwatch.dto.AgentDto;
 import com.hookwatch.dto.AgentMetricsDto;
 import com.hookwatch.repository.AgentRepository;
 import com.hookwatch.repository.TraceRepository;
+import com.hookwatch.security.TenantContext;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -26,7 +29,23 @@ public class AgentService {
         return agentRepository.save(agent);
     }
 
+    /**
+     * Returns all agents belonging to the authenticated tenant.
+     * Tenant ID is sourced from TenantContext (set by ApiKeyFilter).
+     */
+    public List<Agent> listForCurrentTenant() {
+        UUID tenantId = TenantContext.get();
+        return agentRepository.findByTenantId(tenantId);
+    }
+
+    /**
+     * Finds an agent by ID, enforcing it belongs to the authenticated tenant.
+     */
     public Optional<Agent> findById(UUID id) {
+        UUID tenantId = TenantContext.get();
+        if (tenantId != null) {
+            return agentRepository.findByIdAndTenantId(id, tenantId);
+        }
         return agentRepository.findById(id);
     }
 
