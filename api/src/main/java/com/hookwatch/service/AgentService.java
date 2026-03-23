@@ -7,6 +7,7 @@ import com.hookwatch.repository.AgentRepository;
 import com.hookwatch.repository.TraceRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -24,6 +25,10 @@ public class AgentService {
                 .description(dto.getDescription())
                 .build();
         return agentRepository.save(agent);
+    }
+
+    public List<Agent> findAll() {
+        return agentRepository.findAll();
     }
 
     public Optional<Agent> findById(UUID id) {

@@ -12,6 +12,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.UUID;
 
 @RestController
@@ -21,6 +22,12 @@ import java.util.UUID;
 public class AgentController {
 
     private final AgentService agentService;
+
+    @GetMapping
+    @Operation(summary = "List all agents")
+    public List<Agent> list() {
+        return agentService.findAll();
+    }
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
