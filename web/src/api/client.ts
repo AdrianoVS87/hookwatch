@@ -11,7 +11,7 @@ const API_KEY = import.meta.env.VITE_API_KEY ?? 'demo-key-hookwatch'
  * Base URL for the HookWatch API.
  * Points to the VPS backend in production; proxied via Vite in dev.
  */
-const BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'http://82.25.76.54/api/v1'
+const BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'https://hookwatch.adrianovs.net/api/v1'
 
 export const client = axios.create({
   baseURL: BASE_URL,
