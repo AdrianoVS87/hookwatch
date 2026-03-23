@@ -71,51 +71,108 @@ hookwatch/
 
 ## Model Routing (evidence-based, 2026)
 
-Aliases: `/model opus`, `/model sonnet`, `/model codex`, `/model haiku`
+Research sources: morphllm.com benchmarks, faros.ai real-world developer reviews,
+emergent.sh Claude vs Codex comparison, Anthropic engineering blog (Feb 2026).
 
-### `anthropic/claude-opus-4-6` — use for reasoning-heavy tasks
-- Bug with ambiguous root cause: race conditions, Hibernate lifecycle, JVM internals, concurrency
-- Architecture decisions with real trade-offs (indexing strategy, caching, consistency)
+---
+
+### `anthropic/claude-opus-4-6` — reasoning-first tasks
+
+Use when the problem requires **thinking before coding**, not just coding.
+
+- Bug with non-obvious root cause: race conditions, Hibernate lifecycle quirks, JVM internals
+- Architecture decisions with real trade-offs (consistency vs latency, indexing strategy)
+- Security review requiring adversarial thinking (auth bypass, injection vectors)
 - Cross-file refactor touching 5+ interdependent classes
-- Security review requiring adversarial thinking
-- Any bug where the stack trace alone doesn't reveal the cause
+- Any situation where the stack trace alone doesn't reveal the root cause
 
-### `anthropic/claude-sonnet-4-6` — default for implementation
-- Implementing a defined feature in Java/Spring/React
-- Writing or fixing tests
-- Routine bug with clear and obvious stack trace
-- Frontend component and store work
+**Evidence:** Opus 4.6 leads GPQA Diamond (PhD-level reasoning). Extended thinking
+traces execution paths across interdependent systems. Caught the List.of() →
+ImmutableCollections.uoe() Hibernate crash that Sonnet missed (March 2026).
 
-### `openai-codex/gpt-5.3-codex` — for terminal/infra tasks
-- Docker, docker-compose, CI/CD, GitHub Actions
-- Makefile, shell scripts, nginx/infra config
-- Mechanical tasks that are purely terminal-bound
-- Auto-fallback when Sonnet is rate-limited
+---
 
-### `anthropic/claude-haiku-4-5` — for trivial tasks
-- Generating commit messages
-- Trivial formatting or rename refactors
-- Summarizing logs or output
+### `anthropic/claude-sonnet-4-6` — default implementation model
 
-### Routing decision rule
-> If you need to REASON about WHY something is broken → Opus.
-> If you know WHAT to build and just need to build it → Sonnet.
-> If it's Docker/shell/infra → Codex.
+Use for **well-defined tasks with clear scope**.
 
-### Real example from this codebase
-The `List.of()` → `ImmutableCollections.uoe()` Hibernate crash is exactly the class of bug
-that warrants Opus: requires knowing `.toList()` returns an immutable list since Java 16, and
-that Hibernate's `CollectionType.replaceElements()` calls `.clear()` during merge.
-A reasoning pass with Opus would have caught this at review time.
+- Feature implementation in Java/Spring/React (scope is clear)
+- Writing unit + integration tests
+- Routine bug with clear stack trace pointing to the cause
+- Frontend component, store, and hook work
+- API endpoint implementation following established patterns
 
-Auto-fallback chain: Sonnet → Codex → Opus (rate limit cascade)
+**Evidence:** Best cost-performance ratio. SWE-bench 80.8%. Handles 95% of
+day-to-day implementation tasks. 3-4x more token-efficient than Opus.
 
-## Agent Teams (Swarms)
+---
 
-- Enabled via `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1`
-- Use for multi-layer parallel work (backend + frontend + infra simultaneously)
-- Lead agent plans with Opus, workers execute with Sonnet/Codex
-- Single agent for focused single-layer work
+### `openai-codex/gpt-5.3-codex` — execution-first tasks (NOT just fallback)
+
+Codex is a **first-class choice** for specific task types where it empirically
+outperforms Claude:
+
+- **Adversarial code review** — use Codex as a "tough second reviewer" after
+  Claude drafts: catches edge cases, inconsistencies, forgotten null checks.
+  (Source: faros.ai real-world developer reviews, Feb 2026)
+- **Tool-heavy workflows** — 47% token reduction in workflows with many tool
+  calls vs Claude. (Source: morphllm.com, 2026)
+- **One-shot autonomous execution** — long-running terminal tasks where Codex
+  runs fully unattended and reports back. Slower but reliable.
+- **Docker, CI/CD, GitHub Actions, Makefile, nginx** — infrastructure-as-code
+  where execution speed matters more than reasoning depth
+- **Auto-fallback** when Sonnet/Opus hit rate limits
+
+---
+
+### `anthropic/claude-haiku-4-5` — speed-sensitive trivial tasks
+
+- Generating conventional commit messages
+- Trivial rename/formatting refactors
+- Summarizing log output or CI results
+- Quick lookups with no reasoning required
+
+---
+
+### Decision framework
+
+```
+Is the root cause unclear? → Opus (reason first)
+Is the scope well-defined? → Sonnet (implement)
+Is it infra/shell/Docker? → Codex (execute)
+Is it trivial/fast? → Haiku (speed)
+
+Need tough code review? → Draft with Sonnet, review with Codex
+```
+
+Auto-fallback chain: Sonnet → Codex → Opus
+
+---
+
+## Agent Teams / Swarms (Claude Code experimental)
+
+Enabled via `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1` in `~/.claude/settings.json`.
+
+**When to use swarms:**
+- Multi-layer parallel work: backend + frontend + infra can run simultaneously
+- Independent subtasks with no shared state (different files, different services)
+- Tasks where parallelism reduces wall-clock time significantly
+
+**When NOT to use swarms:**
+- Tasks with shared mutable state (concurrent git commits = conflicts)
+- Sequential dependencies (frontend can't be wired until API is defined)
+- Simple single-layer tasks (spawning overhead isn't worth it)
+
+**Swarm topology for this project:**
+```
+Orchestrator (Opus) — plans decomposition, reviews results
+├── Backend agent (Sonnet) — Java/Spring implementation
+├── Frontend agent (Sonnet) — React/TypeScript implementation
+└── Infra agent (Codex) — Docker/CI/nginx configuration
+```
+
+Orchestrator reviews all agent output before committing.
+Never spawn swarms for work in the OpenClaw workspace itself.
 
 ## Development Notes
 
