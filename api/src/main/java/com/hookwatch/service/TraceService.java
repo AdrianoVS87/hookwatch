@@ -21,6 +21,7 @@ import java.util.UUID;
 public class TraceService {
 
     private final TraceRepository traceRepository;
+    private final TraceEventPublisher eventPublisher;
 
     @Transactional
     public Trace create(TraceDto dto) {
@@ -50,7 +51,9 @@ public class TraceService {
             traceRepository.save(saved);
         }
 
-        return traceRepository.findById(saved.getId()).orElse(saved);
+        Trace result = traceRepository.findById(saved.getId()).orElse(saved);
+        eventPublisher.publish(result.getId(), result);
+        return result;
     }
 
     public Page<Trace> findByAgentId(UUID agentId, Pageable pageable) {

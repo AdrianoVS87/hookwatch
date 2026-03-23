@@ -25,20 +25,27 @@ public class ApiKeyFilter extends OncePerRequestFilter {
                                     FilterChain filterChain) throws ServletException, IOException {
         String path = request.getRequestURI();
 
-        // Skip auth for Swagger UI and actuator
-        if (path.startsWith("/swagger-ui") || path.startsWith("/v3/api-docs") || path.startsWith("/actuator")) {
+        // Skip auth for Swagger UI, actuator, and tenant bootstrap endpoint
+        if (path.startsWith("/swagger-ui") || path.startsWith("/v3/api-docs")
+                || path.startsWith("/actuator") || path.equals("/api/v1/tenants")) {
             filterChain.doFilter(request, response);
             return;
         }
 
         String apiKey = request.getHeader(API_KEY_HEADER);
+        // SSE clients cannot set custom headers; accept key as query param for stream endpoints
         if (apiKey == null || apiKey.isBlank()) {
+            apiKey = request.getParameter("apiKey");
+        }
+        if (apiKey == null || apiKey.isBlank()) {
+            response.setContentType("application/json");
             response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
             response.getWriter().write("{\"error\":\"Missing X-API-Key header\"}");
             return;
         }
 
         if (tenantRepository.findByApiKey(apiKey).isEmpty()) {
+            response.setContentType("application/json");
             response.setStatus(HttpServletResponse.SC_FORBIDDEN);
             response.getWriter().write("{\"error\":\"Invalid API key\"}");
             return;
