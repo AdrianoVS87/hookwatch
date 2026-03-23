@@ -6,7 +6,7 @@ import TraceTable from '../components/TraceTable'
 import MetricsBar from '../components/MetricsBar'
 
 export default function Dashboard() {
-  const { agents, selectedAgentId, loading: agentsLoading, loadAgents, selectAgent } = useAgentStore()
+  const { agents, selectedAgentId, loading: agentsLoading, loadAgents, selectAgent, isDemo } = useAgentStore()
   const { traces, loading: tracesLoading, loadTraces, selectTrace } = useTraceStore()
 
   useEffect(() => { loadAgents() }, [loadAgents])
@@ -19,9 +19,19 @@ export default function Dashboard() {
         padding: '28px 40px 20px',
         borderBottom: '1px solid var(--border)',
       }}>
-        <h1 style={{ fontSize: 20, fontWeight: 600, color: 'var(--text-primary)', marginBottom: 16, letterSpacing: '-0.02em' }}>
-          Dashboard
-        </h1>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
+          <h1 style={{ fontSize: 20, fontWeight: 600, color: 'var(--text-primary)', letterSpacing: '-0.02em', margin: 0 }}>
+            Dashboard
+          </h1>
+          {isDemo && (
+            <span style={{
+              fontSize: 10, fontWeight: 600, letterSpacing: '0.08em',
+              textTransform: 'uppercase', padding: '2px 7px', borderRadius: 4,
+              background: 'rgba(245,158,11,0.12)', color: '#F59E0B',
+              border: '1px solid rgba(245,158,11,0.2)',
+            }}>Demo data</span>
+          )}
+        </div>
 
         {/* Agent pills */}
         <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>

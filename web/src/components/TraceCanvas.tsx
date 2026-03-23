@@ -31,13 +31,13 @@ export default function TraceCanvas({ spans, onNodeClick }: Props) {
 
     // Group spans by depth (BFS from roots)
     const depth = new Map<string, number>()
-    const roots = spans.filter(s => !s.parentId || !spanMap.has(s.parentId))
+    const roots = spans.filter(s => !s.parentSpanId || !spanMap.has(s.parentSpanId))
     const queue = [...roots.map(s => ({ id: s.id, d: 0 }))]
     while (queue.length > 0) {
       const item = queue.shift()!
       depth.set(item.id, item.d)
       spans
-        .filter(s => s.parentId === item.id)
+        .filter(s => s.parentSpanId === item.id)
         .forEach(s => queue.push({ id: s.id, d: item.d + 1 }))
     }
 
@@ -73,10 +73,10 @@ export default function TraceCanvas({ spans, onNodeClick }: Props) {
     })
 
     const edges: Edge[] = spans
-      .filter(s => s.parentId && spanMap.has(s.parentId))
+      .filter(s => s.parentSpanId && spanMap.has(s.parentSpanId))
       .map(s => ({
-        id: `${s.parentId}-${s.id}`,
-        source: s.parentId!,
+        id: `${s.parentSpanId}-${s.id}`,
+        source: s.parentSpanId!,
         target: s.id,
         style: { stroke: 'rgba(255,255,255,0.12)', strokeWidth: 1 },
         animated: s.status === 'RUNNING',
