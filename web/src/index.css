@@ -1,12 +1,48 @@
 @import "tailwindcss";
 
+*, *::before, *::after { box-sizing: border-box; }
+
 :root {
-  --bg-primary: #0f172a;
+  --bg: #080C14;
+  --surface: #0D1117;
+  --surface-2: #161B26;
+  --border: rgba(255,255,255,0.06);
+  --border-focus: rgba(99,102,241,0.5);
+  --text-primary: #F0F4F8;
+  --text-secondary: #8B95A1;
+  --text-tertiary: #4A5568;
+  --accent: #6366F1;
+  --accent-hover: #818CF8;
+  --success: #10B981;
+  --error: #EF4444;
+  --warning: #F59E0B;
+}
+
+html, body, #root {
+  height: 100%;
+  margin: 0;
 }
 
 body {
-  margin: 0;
-  background-color: #0f172a;
-  color: #f1f5f9;
-  font-family: system-ui, -apple-system, sans-serif;
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  font-size: 14px;
+  line-height: 1.5;
+  background: var(--bg);
+  color: var(--text-primary);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.2); }
+
+/* ReactFlow override — remove white background */
+.react-flow { background: var(--bg) !important; }
+.react-flow__background { background: var(--bg) !important; }
+.react-flow__controls { background: var(--surface-2) !important; border: 1px solid var(--border) !important; border-radius: 8px !important; }
+.react-flow__controls-button { background: transparent !important; border-bottom: 1px solid var(--border) !important; color: var(--text-secondary) !important; }
+.react-flow__controls-button:hover { background: var(--surface) !important; }
+.react-flow__minimap { background: var(--surface-2) !important; border: 1px solid var(--border) !important; border-radius: 8px !important; }
