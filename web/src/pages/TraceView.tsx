@@ -1,21 +1,27 @@
 import { useState } from 'react'
-import { Activity, ArrowLeft } from 'lucide-react'
+import { Activity, ArrowLeft, Clock } from 'lucide-react'
 import { useTraceStore } from '../stores/useTraceStore'
 import { useTraceStream } from '../hooks/useTraceStream'
 import TraceCanvas from '../components/TraceCanvas'
 import SpanDetail from '../components/SpanDetail'
+import ReplayControls from '../components/ReplayControls'
 import type { Span } from '../types'
 
 export default function TraceView() {
   const { selectedTrace, clearTrace } = useTraceStore()
   const [activeSpan, setActiveSpan] = useState<Span | null>(null)
+  const [replayMode, setReplayMode] = useState(false)
+  const [visibleSpans, setVisibleSpans] = useState<Span[]>([])
 
   // Keep canvas live while a RUNNING trace is open
   useTraceStream(selectedTrace?.id ?? null)
 
   const onNodeClick = (spanId: string) => {
-    setActiveSpan(selectedTrace?.spans.find((s) => s.id === spanId) ?? null)
+    const pool = replayMode ? visibleSpans : (selectedTrace?.spans ?? [])
+    setActiveSpan(pool.find((s) => s.id === spanId) ?? null)
   }
+
+  const displaySpans = replayMode ? visibleSpans : (selectedTrace?.spans ?? [])
 
   if (!selectedTrace) {
     return (
@@ -43,15 +49,40 @@ export default function TraceView() {
                                                  'bg-blue-500/20 text-blue-400'
         }`}>{selectedTrace.status}</span>
         <span className="text-slate-500 text-sm ml-auto">{selectedTrace.spans.length} spans</span>
+        <button
+          onClick={() => {
+            setReplayMode((m) => !m)
+            setActiveSpan(null)
+          }}
+          className={`flex items-center gap-1.5 px-2.5 py-1 rounded text-xs transition-colors ${
+            replayMode
+              ? 'bg-indigo-600 text-white'
+              : 'bg-slate-700 text-slate-400 hover:text-white hover:bg-slate-600'
+          }`}
+        >
+          <Clock size={12} />
+          Replay
+        </button>
       </header>
-      <div className="flex flex-1 overflow-hidden">
-        <div className="flex-1">
-          {selectedTrace.spans.length === 0
-            ? <div className="flex items-center justify-center h-full text-slate-500">No spans in this trace</div>
-            : <TraceCanvas spans={selectedTrace.spans} onNodeClick={onNodeClick} />
-          }
+      <div className="flex flex-col flex-1 overflow-hidden">
+        <div className="flex flex-1 overflow-hidden">
+          <div className="flex-1">
+            {displaySpans.length === 0
+              ? <div className="flex items-center justify-center h-full text-slate-500">No spans in this trace</div>
+              : <TraceCanvas spans={displaySpans} onNodeClick={onNodeClick} />
+            }
+          </div>
+          {activeSpan && <SpanDetail span={activeSpan} onClose={() => setActiveSpan(null)} />}
         </div>
-        {activeSpan && <SpanDetail span={activeSpan} onClose={() => setActiveSpan(null)} />}
+        {replayMode && (
+          <ReplayControls
+            spans={selectedTrace.spans}
+            onFrame={(frames) => {
+              setVisibleSpans(frames)
+              setActiveSpan(null)
+            }}
+          />
+        )}
       </div>
     </div>
   )
