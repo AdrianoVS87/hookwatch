@@ -69,16 +69,44 @@ hookwatch/
 └── LICENSE
 ```
 
-## Model Routing (live in OpenClaw)
+## Model Routing (evidence-based, 2026)
 
 Aliases: `/model opus`, `/model sonnet`, `/model codex`, `/model haiku`
 
-- **Sonnet 4.6 (default):** Java implementation, React frontend, tests, features
-- **Codex 5.3 (1st fallback + manual switch):** Docker, CI/CD, Makefile, scripts, terminal ops, focused bug fixes
-- **Opus 4.6 (2nd fallback + manual switch):** architecture, planning, decomposition, code review, complex debugging
-- **Haiku 4.5 (manual switch):** commit messages, formatting, trivial tasks
+### `anthropic/claude-opus-4-6` — use for reasoning-heavy tasks
+- Bug with ambiguous root cause: race conditions, Hibernate lifecycle, JVM internals, concurrency
+- Architecture decisions with real trade-offs (indexing strategy, caching, consistency)
+- Cross-file refactor touching 5+ interdependent classes
+- Security review requiring adversarial thinking
+- Any bug where the stack trace alone doesn't reveal the cause
 
-Switch on-the-fly: `/model codex` before Docker tasks, `/model opus` before architecture, `/model sonnet` to go back
+### `anthropic/claude-sonnet-4-6` — default for implementation
+- Implementing a defined feature in Java/Spring/React
+- Writing or fixing tests
+- Routine bug with clear and obvious stack trace
+- Frontend component and store work
+
+### `openai-codex/gpt-5.3-codex` — for terminal/infra tasks
+- Docker, docker-compose, CI/CD, GitHub Actions
+- Makefile, shell scripts, nginx/infra config
+- Mechanical tasks that are purely terminal-bound
+- Auto-fallback when Sonnet is rate-limited
+
+### `anthropic/claude-haiku-4-5` — for trivial tasks
+- Generating commit messages
+- Trivial formatting or rename refactors
+- Summarizing logs or output
+
+### Routing decision rule
+> If you need to REASON about WHY something is broken → Opus.
+> If you know WHAT to build and just need to build it → Sonnet.
+> If it's Docker/shell/infra → Codex.
+
+### Real example from this codebase
+The `List.of()` → `ImmutableCollections.uoe()` Hibernate crash is exactly the class of bug
+that warrants Opus: requires knowing `.toList()` returns an immutable list since Java 16, and
+that Hibernate's `CollectionType.replaceElements()` calls `.clear()` during merge.
+A reasoning pass with Opus would have caught this at review time.
 
 Auto-fallback chain: Sonnet → Codex → Opus (rate limit cascade)
 
