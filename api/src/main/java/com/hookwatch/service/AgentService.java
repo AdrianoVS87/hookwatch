@@ -8,6 +8,7 @@ import com.hookwatch.repository.TraceRepository;
 import com.hookwatch.security.TenantContext;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Optional;
@@ -33,6 +34,7 @@ public class AgentService {
      * Returns all agents belonging to the authenticated tenant.
      * Tenant ID is sourced from TenantContext (set by ApiKeyFilter).
      */
+    @Transactional(readOnly = true)
     public List<Agent> listForCurrentTenant() {
         UUID tenantId = TenantContext.get();
         return agentRepository.findByTenantId(tenantId);
@@ -41,6 +43,7 @@ public class AgentService {
     /**
      * Finds an agent by ID, enforcing it belongs to the authenticated tenant.
      */
+    @Transactional(readOnly = true)
     public Optional<Agent> findById(UUID id) {
         UUID tenantId = TenantContext.get();
         if (tenantId != null) {
@@ -49,6 +52,7 @@ public class AgentService {
         return agentRepository.findById(id);
     }
 
+    @Transactional(readOnly = true)
     public AgentMetricsDto getMetrics(UUID agentId) {
         long total = traceRepository.countByAgentId(agentId);
         double avgTokens = Optional.ofNullable(traceRepository.avgTokensByAgentId(agentId)).orElse(0.0);

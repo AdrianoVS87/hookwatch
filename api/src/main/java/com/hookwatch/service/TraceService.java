@@ -25,6 +25,7 @@ import java.util.UUID;
 public class TraceService {
 
     private final TraceRepository traceRepository;
+    private final TraceEventPublisher eventPublisher;
 
     @Transactional
     public Trace create(TraceDto dto) {
@@ -40,6 +41,7 @@ public class TraceService {
             trace.setCompletedAt(Instant.now());
         }
 
+        // Use mutable ArrayList — Hibernate requires clear() on the collection during merge
         List<Span> spans = new ArrayList<>();
         if (dto.getSpans() != null) {
             for (SpanDto spanDto : dto.getSpans()) {
@@ -53,7 +55,10 @@ public class TraceService {
 
         spans.forEach(s -> s.setTraceId(saved.getId()));
         saved.setSpans(spans);
-        return traceRepository.save(saved);
+        Trace result = traceRepository.save(saved);
+
+        eventPublisher.publish(result.getId(), result);
+        return result;
     }
 
     /**
@@ -61,6 +66,7 @@ public class TraceService {
      * Prevents cross-tenant access: if agentId does not belong to the tenant,
      * an empty page is returned (no 404 leak).
      */
+    @Transactional(readOnly = true)
     public Page<Trace> findByAgentId(UUID agentId, Pageable pageable) {
         UUID tenantId = TenantContext.get();
         if (tenantId != null) {
@@ -73,6 +79,7 @@ public class TraceService {
      * Finds a trace by ID, verifying it belongs to the authenticated tenant.
      * Throws 403 if the trace exists but belongs to a different tenant.
      */
+    @Transactional(readOnly = true)
     public Optional<Trace> findById(UUID id) {
         UUID tenantId = TenantContext.get();
         if (tenantId != null) {
