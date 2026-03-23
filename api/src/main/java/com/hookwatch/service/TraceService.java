@@ -56,10 +56,12 @@ public class TraceService {
         return result;
     }
 
+    @Transactional(readOnly = true)
     public Page<Trace> findByAgentId(UUID agentId, Pageable pageable) {
         return traceRepository.findByAgentId(agentId, pageable);
     }
 
+    @Transactional(readOnly = true)
     public Optional<Trace> findById(UUID id) {
         return traceRepository.findById(id);
     }
