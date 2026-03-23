@@ -12,6 +12,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -40,13 +41,13 @@ public class TraceService {
         Trace saved = traceRepository.save(trace);
 
         if (dto.getSpans() != null && !dto.getSpans().isEmpty()) {
-            List<Span> spans = dto.getSpans().stream()
-                    .map(spanDto -> {
-                        Span span = mapSpan(spanDto);
-                        span.setTraceId(saved.getId());
-                        return span;
-                    })
-                    .toList();
+            // Use mutable ArrayList — Hibernate requires clear() on the collection during merge
+            List<Span> spans = new ArrayList<>();
+            for (SpanDto spanDto : dto.getSpans()) {
+                Span span = mapSpan(spanDto);
+                span.setTraceId(saved.getId());
+                spans.add(span);
+            }
             saved.setSpans(spans);
             traceRepository.save(saved);
         }
