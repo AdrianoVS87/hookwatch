@@ -3,6 +3,7 @@ package com.hookwatch.repository;
 import com.hookwatch.domain.Trace;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -12,6 +13,7 @@ import java.util.UUID;
 @Repository
 public interface TraceRepository extends JpaRepository<Trace, UUID> {
 
+    @EntityGraph(attributePaths = {"spans"})
     Page<Trace> findByAgentId(UUID agentId, Pageable pageable);
 
     @Query("""
