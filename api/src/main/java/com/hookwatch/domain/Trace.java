@@ -44,7 +44,6 @@ public class Trace {
     private BigDecimal totalCost;
 
     @JdbcTypeCode(SqlTypes.JSON)
-    @Column(columnDefinition = "jsonb")
     private Map<String, Object> metadata;
 
     @OneToMany(mappedBy = "traceId", cascade = CascadeType.ALL, orphanRemoval = true)
