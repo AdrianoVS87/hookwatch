@@ -12,7 +12,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -37,20 +36,21 @@ public class TraceService {
             trace.setCompletedAt(Instant.now());
         }
 
-        List<Span> spans = new ArrayList<>();
-        if (dto.getSpans() != null) {
-            for (SpanDto spanDto : dto.getSpans()) {
-                Span span = mapSpan(spanDto);
-                span.setTraceId(trace.getId());
-                spans.add(span);
-            }
-        }
-
         Trace saved = traceRepository.save(trace);
 
-        spans.forEach(s -> s.setTraceId(saved.getId()));
-        saved.setSpans(spans);
-        return traceRepository.save(saved);
+        if (dto.getSpans() != null && !dto.getSpans().isEmpty()) {
+            List<Span> spans = dto.getSpans().stream()
+                    .map(spanDto -> {
+                        Span span = mapSpan(spanDto);
+                        span.setTraceId(saved.getId());
+                        return span;
+                    })
+                    .toList();
+            saved.setSpans(spans);
+            traceRepository.save(saved);
+        }
+
+        return traceRepository.findById(saved.getId()).orElse(saved);
     }
 
     public Page<Trace> findByAgentId(UUID agentId, Pageable pageable) {
