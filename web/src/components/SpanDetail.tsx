@@ -1,18 +1,24 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { X } from 'lucide-react'
-import type { Span } from '../types'
+import type { Span, Score } from '../types'
+import { fetchTraceScores } from '../api/traces'
 
-type Tab = 'overview' | 'input' | 'output' | 'error'
-const TABS: Tab[] = ['overview', 'input', 'output', 'error']
+type Tab = 'overview' | 'input' | 'output' | 'error' | 'scores'
+const TABS: Tab[] = ['overview', 'input', 'output', 'error', 'scores']
 
 interface Props { span: Span; onClose: () => void }
 
 export default function SpanDetail({ span, onClose }: Props) {
   const [tab, setTab] = useState<Tab>('overview')
+  const [scores, setScores] = useState<Score[]>([])
   const durationMs = span.completedAt
     ? new Date(span.completedAt).getTime() - new Date(span.startedAt).getTime()
     : null
+
+  useEffect(() => {
+    fetchTraceScores(span.traceId).then(setScores).catch(() => setScores([]))
+  }, [span.traceId])
 
   return (
     <motion.aside
@@ -57,7 +63,7 @@ export default function SpanDetail({ span, onClose }: Props) {
             color: tab === t ? 'var(--text-primary)' : 'var(--text-tertiary)',
             borderBottom: tab === t ? '1px solid var(--accent)' : '1px solid transparent',
             transition: 'all 0.15s ease',
-          }}>{t}</button>
+          }}>{t === 'scores' ? `Scores${scores.length ? ` (${scores.length})` : ''}` : t}</button>
         ))}
       </div>
 
@@ -86,8 +92,56 @@ export default function SpanDetail({ span, onClose }: Props) {
           <CodePane text={tab === 'input' ? span.input : tab === 'output' ? span.output : span.error}
             isError={tab === 'error'} />
         )}
+        {tab === 'scores' && (
+          <ScoresPanel scores={scores} />
+        )}
       </div>
     </motion.aside>
+  )
+}
+
+function ScoresPanel({ scores }: { scores: Score[] }) {
+  if (scores.length === 0) {
+    return <div style={{ color: 'var(--text-tertiary)', fontSize: 12, fontStyle: 'italic' }}>No scores</div>
+  }
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+      {scores.map(score => (
+        <div key={score.id} style={{
+          padding: '10px 12px', borderRadius: 6,
+          background: 'var(--surface-2)', border: '1px solid var(--border)',
+        }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+            <span style={{ fontSize: 12, fontWeight: 500, color: 'var(--text-primary)' }}>{score.name}</span>
+            <span style={{
+              fontSize: 9, padding: '1px 5px', borderRadius: 3,
+              background: 'rgba(99,102,241,0.1)', color: '#6366F1', fontWeight: 500,
+            }}>{score.source}</span>
+          </div>
+          <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)' }}>
+            {score.dataType === 'NUMERIC' && score.numericValue != null && (
+              <span style={{
+                color: score.numericValue > 0.7 ? '#10B981' : score.numericValue > 0.4 ? '#F59E0B' : '#EF4444',
+              }}>
+                {score.numericValue.toFixed(2)}
+              </span>
+            )}
+            {score.dataType === 'BOOLEAN' && (
+              <span style={{ color: score.booleanValue ? '#10B981' : '#EF4444' }}>
+                {score.booleanValue ? '\u2713 True' : '\u2717 False'}
+              </span>
+            )}
+            {score.dataType === 'CATEGORICAL' && (
+              <span style={{ color: '#6366F1' }}>{score.stringValue}</span>
+            )}
+          </div>
+          {score.comment && (
+            <div style={{ fontSize: 11, color: 'var(--text-tertiary)', marginTop: 6 }}>{score.comment}</div>
+          )}
+        </div>
+      ))}
+    </div>
   )
 }
 

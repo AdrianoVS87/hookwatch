@@ -49,6 +49,19 @@ export interface AgentMetrics {
   p95LatencyMs: number
 }
 
+export interface Score {
+  id: string
+  traceId: string
+  name: string
+  dataType: "NUMERIC" | "CATEGORICAL" | "BOOLEAN"
+  numericValue?: number
+  stringValue?: string
+  booleanValue?: boolean
+  comment?: string
+  source: "API" | "MANUAL" | "LLM_JUDGE"
+  createdAt: string
+}
+
 export interface PageResponse<T> {
   content: T[]
   totalElements: number
