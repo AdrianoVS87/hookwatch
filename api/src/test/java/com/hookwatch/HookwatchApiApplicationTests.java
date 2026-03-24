@@ -1,12 +1,8 @@
 package com.hookwatch;
 
 import org.junit.jupiter.api.Test;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.context.ActiveProfiles;
 
-@SpringBootTest
-@ActiveProfiles("dev")
-class HookwatchApiApplicationTests {
+class HookwatchApiApplicationTests extends BaseIntegrationTest {
 
     @Test
     void contextLoads() {

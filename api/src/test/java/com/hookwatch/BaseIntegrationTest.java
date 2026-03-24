@@ -6,8 +6,6 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.testcontainers.containers.PostgreSQLContainer;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.web.client.TestRestTemplate;
 import org.springframework.http.*;
@@ -15,16 +13,21 @@ import org.springframework.http.*;
 import java.util.Map;
 import java.util.UUID;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-@Testcontainers
 @ActiveProfiles("test")
 public abstract class BaseIntegrationTest {
 
-    @Container
-    static PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:16-alpine")
-            .withDatabaseName("hookwatch_test")
-            .withUsername("test")
-            .withPassword("test");
+    static final PostgreSQLContainer<?> postgres;
+
+    static {
+        postgres = new PostgreSQLContainer<>("postgres:16-alpine")
+                .withDatabaseName("hookwatch_test")
+                .withUsername("test")
+                .withPassword("test");
+        postgres.start();
+    }
 
     @DynamicPropertySource
     static void configureProperties(DynamicPropertyRegistry registry) {
@@ -43,22 +46,12 @@ public abstract class BaseIntegrationTest {
         return "http://localhost:" + port + "/api/v1";
     }
 
-    /**
-     * Creates a tenant via API and returns the raw API key from the response.
-     */
     @SuppressWarnings("unchecked")
     protected String createTenantAndGetKey(String name) {
-        HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.APPLICATION_JSON);
-        HttpEntity<String> entity = new HttpEntity<>("{\"name\":\"" + name + "\"}", headers);
-        ResponseEntity<Map> response = restTemplate.postForEntity(
-                baseUrl() + "/tenants", entity, Map.class);
-        return (String) response.getBody().get("apiKey");
+        String[] result = createTenantAndGetKeyAndId(name);
+        return result[0];
     }
 
-    /**
-     * Creates a tenant and returns both the API key and tenant ID.
-     */
     @SuppressWarnings("unchecked")
     protected String[] createTenantAndGetKeyAndId(String name) {
         HttpHeaders headers = new HttpHeaders();
@@ -66,13 +59,12 @@ public abstract class BaseIntegrationTest {
         HttpEntity<String> entity = new HttpEntity<>("{\"name\":\"" + name + "\"}", headers);
         ResponseEntity<Map> response = restTemplate.postForEntity(
                 baseUrl() + "/tenants", entity, Map.class);
+        assertThat(response.getStatusCode()).as("Tenant creation failed: " + response.getBody()).isEqualTo(HttpStatus.CREATED);
         Map body = response.getBody();
+        assertThat(body).isNotNull();
         return new String[]{(String) body.get("apiKey"), (String) body.get("id")};
     }
 
-    /**
-     * Creates an agent under the given tenant and returns the agent ID.
-     */
     @SuppressWarnings("unchecked")
     protected UUID createAgent(String apiKey, String tenantId, String name) {
         HttpHeaders headers = authHeaders(apiKey);
@@ -80,6 +72,27 @@ public abstract class BaseIntegrationTest {
         HttpEntity<String> entity = new HttpEntity<>(json, headers);
         ResponseEntity<Map> response = restTemplate.postForEntity(
                 baseUrl() + "/agents", entity, Map.class);
+        assertThat(response.getStatusCode()).as("Agent creation failed: " + response.getBody()).isEqualTo(HttpStatus.CREATED);
+        Map body = response.getBody();
+        assertThat(body).isNotNull();
+        return UUID.fromString((String) body.get("id"));
+    }
+
+    @SuppressWarnings("unchecked")
+    protected UUID createTrace(String apiKey, UUID agentId, String status, int tokens, String costStr) {
+        String traceJson = """
+            {
+                "agentId": "%s",
+                "status": "%s",
+                "totalTokens": %d,
+                "totalCost": %s,
+                "spans": []
+            }
+            """.formatted(agentId, status, tokens, costStr);
+        HttpEntity<String> entity = new HttpEntity<>(traceJson, authHeaders(apiKey));
+        ResponseEntity<Map> response = restTemplate.postForEntity(
+                baseUrl() + "/traces", entity, Map.class);
+        assertThat(response.getStatusCode()).as("Trace creation failed: " + response.getBody()).isEqualTo(HttpStatus.CREATED);
         return UUID.fromString((String) response.getBody().get("id"));
     }
 
