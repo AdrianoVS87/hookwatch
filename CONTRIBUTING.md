@@ -159,6 +159,17 @@ Before marking a PR ready for review:
 
 ---
 
+## CI/CD Deploy Setup
+
+Add these secrets in GitHub repo Settings → Secrets → Actions:
+- `VPS_HOST`: VPS IP address
+- `VPS_USER`: SSH username (root)
+- `VPS_SSH_KEY`: Private SSH key (ed25519)
+
+Deploy triggers automatically on push to main after CI passes.
+
+---
+
 ## Architecture decisions
 
 Significant technical decisions are documented as Architecture Decision Records
