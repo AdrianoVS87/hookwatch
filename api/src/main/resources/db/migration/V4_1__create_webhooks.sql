@@ -1,4 +1,4 @@
-CREATE TABLE webhooks (
+CREATE TABLE IF NOT EXISTS webhooks (
     id         UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     name       VARCHAR(255) NOT NULL,
     target_url VARCHAR(2048) NOT NULL,
