@@ -1,19 +1,16 @@
 package com.hookwatch.repository;
 
+import com.hookwatch.BaseIntegrationTest;
 import com.hookwatch.domain.Tenant;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
-import org.springframework.test.context.ActiveProfiles;
 
 import java.util.Optional;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-@DataJpaTest
-@ActiveProfiles("dev")
-class TenantRepositoryTest {
+class TenantRepositoryTest extends BaseIntegrationTest {
 
     @Autowired
     private TenantRepository tenantRepository;
@@ -22,14 +19,14 @@ class TenantRepositoryTest {
     void findByApiKey_returnsCorrectTenant() {
         String apiKey = UUID.randomUUID().toString();
         Tenant tenant = Tenant.builder()
-                .name("test-tenant")
+                .name("test-tenant-" + UUID.randomUUID())
                 .apiKey(apiKey)
                 .build();
         tenantRepository.save(tenant);
 
         Optional<Tenant> found = tenantRepository.findByApiKey(apiKey);
         assertThat(found).isPresent();
-        assertThat(found.get().getName()).isEqualTo("test-tenant");
+        assertThat(found.get().getName()).isEqualTo(tenant.getName());
     }
 
     @Test

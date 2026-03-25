@@ -1,7 +1,8 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { ArrowUp, ArrowDown } from 'lucide-react'
-import type { Trace, TraceStatus } from '../types'
+import type { Trace, TraceStatus, Score } from '../types'
+import { fetchTraceScores } from '../api/traces'
 
 interface Props { traces: Trace[]; onSelect: (id: string) => void }
 type SortKey = 'status' | 'totalTokens' | 'totalCost' | 'startedAt'
@@ -26,9 +27,62 @@ function timeAgo(iso: string): string {
   return new Date(iso).toLocaleDateString()
 }
 
+function ScoreBadge({ score }: { score: Score }) {
+  if (score.dataType === 'NUMERIC' && score.numericValue != null) {
+    const v = score.numericValue
+    const color = v > 0.7 ? '#10B981' : v > 0.4 ? '#F59E0B' : '#EF4444'
+    return (
+      <span style={{
+        display: 'inline-flex', alignItems: 'center', gap: 4,
+        fontSize: 10, fontWeight: 500, color, marginRight: 4,
+      }}>
+        <span style={{ width: 7, height: 7, borderRadius: '50%', background: color, flexShrink: 0 }} />
+        {score.name}
+      </span>
+    )
+  }
+  if (score.dataType === 'BOOLEAN') {
+    const ok = score.booleanValue === true
+    return (
+      <span style={{
+        fontSize: 10, fontWeight: 500, marginRight: 4,
+        color: ok ? '#10B981' : '#EF4444',
+      }}>
+        {ok ? '\u2713' : '\u2717'} {score.name}
+      </span>
+    )
+  }
+  if (score.dataType === 'CATEGORICAL' && score.stringValue) {
+    return (
+      <span style={{
+        display: 'inline-block', fontSize: 9, fontWeight: 500,
+        padding: '1px 5px', borderRadius: 3, marginRight: 4,
+        background: 'rgba(99,102,241,0.1)', color: '#6366F1',
+      }}>
+        {score.name}: {score.stringValue}
+      </span>
+    )
+  }
+  return null
+}
+
 export default function TraceTable({ traces, onSelect }: Props) {
   const [sortKey, setSortKey] = useState<SortKey>('startedAt')
   const [sortAsc, setSortAsc] = useState(false)
+  const [traceScores, setTraceScores] = useState<Record<string, Score[]>>({})
+
+  useEffect(() => {
+    const traceIds = traces.map(t => t.id)
+    traceIds.forEach(id => {
+      if (!traceScores[id]) {
+        fetchTraceScores(id).then(scores => {
+          if (scores.length > 0) {
+            setTraceScores(prev => ({ ...prev, [id]: scores }))
+          }
+        }).catch(() => {/* scores unavailable */})
+      }
+    })
+  }, [traces])
 
   const sorted = [...traces].sort((a, b) => {
     const v = (t: Trace): string | number => {
@@ -88,6 +142,7 @@ export default function TraceTable({ traces, onSelect }: Props) {
             <StaticCol label="Spans" width={70} />
             <Col label="Tokens" col="totalTokens" width={100} />
             <Col label="Cost" col="totalCost" width={100} />
+            <StaticCol label="Scores" width={140} />
             <StaticCol label="Duration" width={90} />
             <Col label="Started" col="startedAt" />
           </tr>
@@ -95,6 +150,7 @@ export default function TraceTable({ traces, onSelect }: Props) {
         <tbody>
           {sorted.map((trace, i) => {
             const sc = STATUS_CONFIG[trace.status]
+            const scores = traceScores[trace.id] ?? []
             return (
               <motion.tr
                 key={trace.id}
@@ -128,6 +184,15 @@ export default function TraceTable({ traces, onSelect }: Props) {
                 </td>
                 <td style={{ padding: '12px 16px', color: 'var(--text-primary)', fontSize: 13, fontVariantNumeric: 'tabular-nums' }}>
                   {trace.totalCost != null ? `$${trace.totalCost.toFixed(4)}` : '—'}
+                </td>
+                <td style={{ padding: '12px 16px' }}>
+                  {scores.length > 0 ? (
+                    <span style={{ display: 'flex', flexWrap: 'wrap', gap: 2 }}>
+                      {scores.map(s => <ScoreBadge key={s.id} score={s} />)}
+                    </span>
+                  ) : (
+                    <span style={{ color: 'var(--text-tertiary)', fontSize: 11 }}>—</span>
+                  )}
                 </td>
                 <td style={{ padding: '12px 16px', color: 'var(--text-secondary)', fontSize: 13, fontVariantNumeric: 'tabular-nums' }}>
                   {durationMs(trace)}
