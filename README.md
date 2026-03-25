@@ -4,6 +4,7 @@
 > invocation, and retrieval in real time with an interactive span graph.
 
 [![CI/CD](https://github.com/AdrianoVS87/hookwatch/actions/workflows/ci.yml/badge.svg)](https://github.com/AdrianoVS87/hookwatch/actions/workflows/ci.yml)
+[![Deploy](https://github.com/AdrianoVS87/hookwatch/actions/workflows/deploy.yml/badge.svg)](https://github.com/AdrianoVS87/hookwatch/actions/workflows/deploy.yml)
 [![Java](https://img.shields.io/badge/Java-21-orange?logo=openjdk&logoColor=white)](https://openjdk.org/projects/jdk/21/)
 [![Spring Boot](https://img.shields.io/badge/Spring_Boot-3.4-brightgreen?logo=springboot&logoColor=white)](https://spring.io/projects/spring-boot)
 [![React](https://img.shields.io/badge/React-18-61dafb?logo=react&logoColor=white)](https://react.dev)

@@ -159,14 +159,33 @@ Before marking a PR ready for review:
 
 ---
 
-## CI/CD Deploy Setup
+## Deployment
 
-Add these secrets in GitHub repo Settings → Secrets → Actions:
-- `VPS_HOST`: VPS IP address
-- `VPS_USER`: SSH username (root)
-- `VPS_SSH_KEY`: Private SSH key (ed25519)
+### How it works
 
-Deploy triggers automatically on push to main after CI passes.
+Pushing to `main` triggers the **Deploy** workflow (`.github/workflows/deploy.yml`):
+
+1. **Test** — `mvn verify` + `npm run build` must pass
+2. **Deploy** — SSH into VPS, `git pull`, rebuild + restart the API container
+3. **Health check** — polls `GET /api/v1/health` for up to 30 seconds
+4. **Production verify** — hits the public URL to confirm the deploy is live
+
+### GitHub Secrets required
+
+Add these in GitHub repo Settings → Secrets → Actions:
+
+| Secret | Description |
+|--------|-------------|
+| `VPS_HOST` | VPS IP address |
+| `VPS_USER` | SSH username (root) |
+| `VPS_SSH_KEY` | Private SSH key (ed25519) |
+
+### Manual deploy and rollback
+
+```bash
+make deploy    # Build, restart, health-check — auto-rollback on failure
+make rollback  # Restore previous Docker image
+```
 
 ---
 
