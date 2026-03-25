@@ -3,6 +3,7 @@ package com.hookwatch.controller;
 import com.hookwatch.domain.Trace;
 import com.hookwatch.dto.TraceComparisonDto;
 import com.hookwatch.dto.TraceDto;
+import com.hookwatch.service.TraceComparisonService;
 import com.hookwatch.service.TraceService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -24,6 +25,7 @@ import java.util.UUID;
 public class TraceController {
 
     private final TraceService traceService;
+    private final TraceComparisonService traceComparisonService;
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
@@ -49,8 +51,8 @@ public class TraceController {
 
     @GetMapping("/compare")
     @Operation(summary = "Compare two traces side-by-side with computed deltas")
-    public TraceComparisonDto compare(@RequestParam UUID traceId1,
-                                      @RequestParam UUID traceId2) {
-        return traceService.compare(traceId1, traceId2);
+    public ResponseEntity<TraceComparisonDto> compare(@RequestParam UUID traceId1,
+                                                       @RequestParam UUID traceId2) {
+        return ResponseEntity.ok(traceComparisonService.compare(traceId1, traceId2));
     }
 }
