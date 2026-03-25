@@ -6,7 +6,7 @@ import { useTraceStore } from '../stores/useTraceStore'
 import TraceTable from '../components/TraceTable'
 import MetricsBar from '../components/MetricsBar'
 
-export default function Dashboard() {
+export default function Dashboard({ onCompare }: { onCompare?: () => void }) {
   const { agents, selectedAgentId, loading: agentsLoading, loadAgents, selectAgent } = useAgentStore()
   const { traces, loading: tracesLoading, loadTraces, selectTrace } = useTraceStore()
 
@@ -88,7 +88,7 @@ export default function Dashboard() {
           <EmptyState title="No traces yet" subtitle="Traces will appear here once the agent runs" />
         )}
         {!tracesLoading && traces.length > 0 && (
-          <TraceTable traces={traces} onSelect={selectTrace} />
+          <TraceTable traces={traces} onSelect={selectTrace} onCompare={onCompare} />
         )}
       </main>
     </div>

@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
-import { ArrowUp, ArrowDown } from 'lucide-react'
+import { ArrowUp, ArrowDown, GitCompareArrows } from 'lucide-react'
 import type { Trace, TraceStatus, Score } from '../types'
 import { fetchTraceScores } from '../api/traces'
+import { useCompareStore } from '../stores/useCompareStore'
 
-interface Props { traces: Trace[]; onSelect: (id: string) => void }
+interface Props { traces: Trace[]; onSelect: (id: string) => void; onCompare?: () => void }
 type SortKey = 'status' | 'totalTokens' | 'totalCost' | 'startedAt'
 
 const STATUS_CONFIG: Record<TraceStatus, { label: string; color: string; bg: string }> = {
@@ -66,10 +67,11 @@ function ScoreBadge({ score }: { score: Score }) {
   return null
 }
 
-export default function TraceTable({ traces, onSelect }: Props) {
+export default function TraceTable({ traces, onSelect, onCompare }: Props) {
   const [sortKey, setSortKey] = useState<SortKey>('startedAt')
   const [sortAsc, setSortAsc] = useState(false)
   const [traceScores, setTraceScores] = useState<Record<string, Score[]>>({})
+  const { selectedTraces, toggleTrace } = useCompareStore()
 
   useEffect(() => {
     const traceIds = traces.map(t => t.id)
@@ -135,9 +137,27 @@ export default function TraceTable({ traces, onSelect }: Props) {
 
   return (
     <div style={{ overflowX: 'auto' }}>
+      {selectedTraces.length === 2 && onCompare && (
+        <div style={{ padding: '8px 16px', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', gap: 8 }}>
+          <button
+            onClick={onCompare}
+            style={{
+              display: 'inline-flex', alignItems: 'center', gap: 6,
+              padding: '5px 12px', borderRadius: 6, border: '1px solid rgba(99,102,241,0.4)',
+              background: 'rgba(99,102,241,0.12)', color: 'var(--accent-hover)',
+              fontSize: 12, fontWeight: 500, cursor: 'pointer',
+            }}
+          >
+            <GitCompareArrows size={12} strokeWidth={1.5} />
+            Compare selected
+          </button>
+          <span style={{ fontSize: 11, color: 'var(--text-tertiary)' }}>2 traces selected</span>
+        </div>
+      )}
       <table style={{ width: '100%', borderCollapse: 'collapse' }}>
         <thead style={{ position: 'sticky', top: 0, zIndex: 1, background: 'var(--surface)' }}>
           <tr style={{ borderBottom: '1px solid var(--border)' }}>
+            <th style={{ padding: '10px 8px 10px 16px', width: 32 }} />
             <Col label="Status" col="status" width={120} />
             <StaticCol label="Spans" width={70} />
             <Col label="Tokens" col="totalTokens" width={100} />
@@ -151,6 +171,7 @@ export default function TraceTable({ traces, onSelect }: Props) {
           {sorted.map((trace, i) => {
             const sc = STATUS_CONFIG[trace.status]
             const scores = traceScores[trace.id] ?? []
+            const isSelected = selectedTraces.includes(trace.id)
             return (
               <motion.tr
                 key={trace.id}
@@ -160,11 +181,21 @@ export default function TraceTable({ traces, onSelect }: Props) {
                 onClick={() => onSelect(trace.id)}
                 style={{
                   borderBottom: '1px solid var(--border)', cursor: 'pointer',
-                  background: i % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.01)',
+                  background: isSelected ? 'rgba(99,102,241,0.06)' : i % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.01)',
+                  borderLeft: isSelected ? '2px solid var(--accent)' : '2px solid transparent',
                 }}
-                onMouseEnter={(e) => { (e.currentTarget as HTMLTableRowElement).style.background = 'var(--surface-2)' }}
-                onMouseLeave={(e) => { (e.currentTarget as HTMLTableRowElement).style.background = i % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.01)' }}
+                onMouseEnter={(e) => { if (!isSelected) (e.currentTarget as HTMLTableRowElement).style.background = 'var(--surface-2)' }}
+                onMouseLeave={(e) => { if (!isSelected) (e.currentTarget as HTMLTableRowElement).style.background = i % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.01)' }}
               >
+                <td style={{ padding: '12px 4px 12px 12px', width: 32 }}>
+                  <input
+                    type="checkbox"
+                    checked={isSelected}
+                    onClick={(e) => e.stopPropagation()}
+                    onChange={() => toggleTrace(trace.id)}
+                    style={{ cursor: 'pointer', accentColor: 'var(--accent)' }}
+                  />
+                </td>
                 <td style={{ padding: '12px 16px' }}>
                   <span style={{
                     display: 'inline-flex', alignItems: 'center', gap: 6,

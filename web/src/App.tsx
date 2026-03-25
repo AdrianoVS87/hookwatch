@@ -1,18 +1,20 @@
 import { useState, useEffect, lazy, Suspense } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
-import { LayoutDashboard, GitBranch, Settings, Search, Webhook, ChevronLeft, ChevronRight } from 'lucide-react'
+import { LayoutDashboard, GitBranch, GitCompareArrows, Settings, Search, Webhook, ChevronLeft, ChevronRight } from 'lucide-react'
 import Dashboard from './pages/Dashboard'
 import CommandPalette from './components/CommandPalette'
 import { useUIStore } from './stores/useUIStore'
 import './index.css'
 
 const TraceView = lazy(() => import('./pages/TraceView'))
+const CompareView = lazy(() => import('./pages/CompareView'))
 
-type Page = 'dashboard' | 'traces' | 'settings'
+type Page = 'dashboard' | 'traces' | 'compare' | 'settings'
 
 const NAV = [
   { id: 'dashboard' as Page, label: 'Dashboard', icon: LayoutDashboard },
   { id: 'traces'    as Page, label: 'Traces',    icon: GitBranch },
+  { id: 'compare'   as Page, label: 'Compare',   icon: GitCompareArrows },
   { id: 'settings'  as Page, label: 'Settings',  icon: Settings },
 ]
 
@@ -165,10 +167,15 @@ export default function App() {
             transition={{ duration: 0.15, ease: 'easeOut' }}
             style={{ height: '100%' }}
           >
-            {page === 'dashboard' && <Dashboard />}
+            {page === 'dashboard' && <Dashboard onCompare={() => setPage('compare')} />}
             {page === 'traces' && (
               <Suspense fallback={<div style={{ padding: 40, color: 'var(--text-tertiary)' }}>Loading…</div>}>
                 <TraceView />
+              </Suspense>
+            )}
+            {page === 'compare' && (
+              <Suspense fallback={<div style={{ padding: 40, color: 'var(--text-tertiary)' }}>Loading…</div>}>
+                <CompareView onBack={() => setPage('dashboard')} />
               </Suspense>
             )}
             {page === 'settings'  && <SettingsPage />}
