@@ -1,6 +1,6 @@
 import { useState, useEffect, lazy, Suspense } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
-import { LayoutDashboard, GitBranch, GitCompareArrows, Settings, Search, Webhook, ChevronLeft, ChevronRight } from 'lucide-react'
+import { LayoutDashboard, GitBranch, GitCompareArrows, Settings, Search, Webhook, ChevronLeft, ChevronRight, BarChart3 } from 'lucide-react'
 import Dashboard from './pages/Dashboard'
 import CommandPalette from './components/CommandPalette'
 import { useUIStore } from './stores/useUIStore'
@@ -8,12 +8,14 @@ import './index.css'
 
 const TraceView = lazy(() => import('./pages/TraceView'))
 const CompareView = lazy(() => import('./pages/CompareView'))
+const AnalyticsView = lazy(() => import('./pages/AnalyticsView'))
 
-type Page = 'dashboard' | 'traces' | 'compare' | 'settings'
+type Page = 'dashboard' | 'traces' | 'analytics' | 'compare' | 'settings'
 
 const NAV = [
   { id: 'dashboard' as Page, label: 'Dashboard', icon: LayoutDashboard },
   { id: 'traces'    as Page, label: 'Traces',    icon: GitBranch },
+  { id: 'analytics' as Page, label: 'Analytics', icon: BarChart3 },
   { id: 'compare'   as Page, label: 'Compare',   icon: GitCompareArrows },
   { id: 'settings'  as Page, label: 'Settings',  icon: Settings },
 ]
@@ -171,6 +173,11 @@ export default function App() {
             {page === 'traces' && (
               <Suspense fallback={<div style={{ padding: 40, color: 'var(--text-tertiary)' }}>Loading…</div>}>
                 <TraceView />
+              </Suspense>
+            )}
+            {page === 'analytics' && (
+              <Suspense fallback={<div style={{ padding: 40, color: 'var(--text-tertiary)' }}>Loading…</div>}>
+                <AnalyticsView />
               </Suspense>
             )}
             {page === 'compare' && (
