@@ -90,3 +90,38 @@ export interface TraceComparison {
     spanBySpanComparison: SpanComparison[]
   }
 }
+
+export interface AnalyticsData {
+  dailyUsage: DailyUsage[]
+  byModel: ModelUsage[]
+  topExpensiveTraces: TopTrace[]
+  costTrend: CostTrend
+}
+
+export interface DailyUsage {
+  date: string
+  totalTokens: number
+  totalCost: number
+  traceCount: number
+  avgLatencyMs: number
+  errorRate: number
+}
+
+export interface ModelUsage {
+  model: string
+  totalTokens: number
+  totalCost: number
+  traceCount: number
+}
+
+export interface TopTrace {
+  traceId: string
+  totalCost: number
+  totalTokens: number
+  startedAt: string
+}
+
+export interface CostTrend {
+  percentChangeVsPreviousPeriod: number
+  projectedMonthlyCost: number
+}
