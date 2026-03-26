@@ -8,7 +8,6 @@ import com.hookwatch.repository.AgentRepository;
 import com.hookwatch.repository.TraceRepository;
 import com.hookwatch.security.TenantContext;
 import com.hookwatch.service.OtelMapper;
-import com.hookwatch.service.TraceService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
@@ -30,7 +29,6 @@ public class OtelController {
     private final TraceRepository traceRepository;
     private final AgentRepository agentRepository;
     private final OtelMapper otelMapper;
-    private final TraceService traceService;
 
     /**
      * Export a HookWatch trace in OTLP JSON format.
@@ -110,8 +108,8 @@ public class OtelController {
 
     /**
      * Persists a Trace (constructed from OTLP) with all its spans.
-     * We bypass TraceService.create() (which accepts a DTO) and go directly
-     * to the repository so we can preserve imported timestamps and IDs.
+     * Save in two steps while keeping the same managed collection instance
+     * to avoid orphan-removal dereference issues.
      */
     private Trace persistTrace(Trace trace, UUID agentId) {
         trace.setAgentId(agentId);
@@ -125,20 +123,20 @@ public class OtelController {
             trace.setCompletedAt(Instant.now());
         }
 
-        // Clear span IDs so JPA generates them on insert (we don't want to enforce imported hex IDs)
-        for (Span span : trace.getSpans()) {
-            span.setId(null);
-            if (span.getStartedAt() == null) span.setStartedAt(Instant.now());
-        }
-
-        // First save the trace without spans to get the ID
-        java.util.List<Span> spans = new java.util.ArrayList<>(trace.getSpans());
+        java.util.List<Span> incomingSpans = new java.util.ArrayList<>(trace.getSpans());
         trace.getSpans().clear();
+
+        // 1) Persist trace first so it gets generated UUID
         Trace saved = traceRepository.save(trace);
 
-        // Wire traceId and save with spans
-        spans.forEach(s -> s.setTraceId(saved.getId()));
-        saved.setSpans(spans);
+        // 2) Attach spans to the same managed collection instance
+        for (Span span : incomingSpans) {
+            span.setId(null);
+            span.setTraceId(saved.getId());
+            if (span.getStartedAt() == null) span.setStartedAt(Instant.now());
+            saved.getSpans().add(span);
+        }
+
         return traceRepository.save(saved);
     }
 }
