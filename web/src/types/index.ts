@@ -69,3 +69,24 @@ export interface PageResponse<T> {
   size: number
   number: number
 }
+
+export interface SpanComparison {
+  span1Name: string | null
+  span2Name: string | null
+  tokensDiff: number
+  latencyDiffMs: number
+  statusMatch: boolean
+}
+
+export interface TraceComparison {
+  trace1: Trace
+  trace2: Trace
+  delta: {
+    tokensDiff: number
+    costDiff: number
+    latencyDiffMs: number
+    statusMatch: boolean
+    spanCountDiff: number
+    spanBySpanComparison: SpanComparison[]
+  }
+}

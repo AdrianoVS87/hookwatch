@@ -36,7 +36,7 @@ export default function MetricsBar() {
           padding: '12px 20px',
           borderRight: i < items.length - 1 ? '1px solid var(--border)' : 'none',
         }}>
-          <div style={{ fontSize: 11, color: 'var(--text-tertiary)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 4 }}>
+          <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.55)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 4 }}>
             {item.label}
           </div>
           <div style={{ fontSize: 16, fontWeight: 600, color: 'var(--text-primary)', letterSpacing: '-0.02em' }}>

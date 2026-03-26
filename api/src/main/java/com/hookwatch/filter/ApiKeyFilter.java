@@ -30,9 +30,10 @@ public class ApiKeyFilter extends OncePerRequestFilter {
                                     FilterChain filterChain) throws ServletException, IOException {
         String path = request.getRequestURI();
 
-        // Skip auth for Swagger UI, actuator, and tenant bootstrap endpoint
+        // Skip auth for Swagger UI, actuator, health check, and tenant bootstrap endpoint
         if (path.startsWith("/swagger-ui") || path.startsWith("/v3/api-docs")
-                || path.startsWith("/actuator") || path.equals("/api/v1/tenants")) {
+                || path.startsWith("/actuator") || path.equals("/api/v1/tenants")
+                || path.equals("/api/v1/health")) {
             filterChain.doFilter(request, response);
             return;
         }
