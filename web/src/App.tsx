@@ -71,14 +71,14 @@ export default function App() {
           <button
             onClick={openCommandPalette}
             style={{
-              display: 'flex', alignItems: 'center', gap: 8,
+              display: 'flex', alignItems: 'center', gap: 9,
               padding: '7px 10px', marginBottom: 8,
               background: 'var(--surface-2)', border: '1px solid var(--border)',
               borderRadius: 6, cursor: 'pointer', width: '100%',
               color: 'var(--text-tertiary)', fontSize: 12,
             }}
           >
-            <Search size={12} strokeWidth={1.5} />
+            <Search size={14} strokeWidth={1.5} style={{ flexShrink: 0 }} />
             <span style={{ flex: 1, textAlign: 'left' }}>Search…</span>
             <kbd style={{
               fontSize: 10, background: 'rgba(255,255,255,0.05)',

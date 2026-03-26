@@ -8,7 +8,7 @@ import MetricsBar from '../components/MetricsBar'
 
 export default function Dashboard({ onCompare }: { onCompare?: () => void }) {
   const { agents, selectedAgentId, loading: agentsLoading, loadAgents, selectAgent } = useAgentStore()
-  const { traces, loading: tracesLoading, loadTraces, selectTrace } = useTraceStore()
+  const { traces, totalElements, loading: tracesLoading, loadTraces, selectTrace } = useTraceStore()
 
   useEffect(() => { loadAgents() }, [loadAgents])
   useEffect(() => {
@@ -76,19 +76,34 @@ export default function Dashboard({ onCompare }: { onCompare?: () => void }) {
       </header>
 
       {/* Metrics bar */}
-      <MetricsBar />
+      <div style={{ marginTop: 24 }}>
+        <MetricsBar />
+      </div>
 
       {/* Trace list */}
       <main style={{ flex: 1, overflow: 'auto' }}>
         {tracesLoading && <LoadingState />}
         {!tracesLoading && !selectedAgentId && (
-          <EmptyState title="Select an agent to view traces" subtitle="Use ⌘K to search" showIcon />
+          <EmptyState title="Select an agent to view traces" subtitle="Use ⌘K to search" showIcon>
+            {agents.length > 0 && (
+              <button
+                onClick={() => selectAgent(agents[0].id)}
+                style={{
+                  marginTop: 8, padding: '6px 14px', borderRadius: 6,
+                  border: '1px solid var(--border)', background: 'var(--surface-2)',
+                  color: 'var(--text-secondary)', fontSize: 12, cursor: 'pointer',
+                }}
+              >
+                View all agents
+              </button>
+            )}
+          </EmptyState>
         )}
         {!tracesLoading && selectedAgentId && traces.length === 0 && (
           <EmptyState title="No traces yet" subtitle="Traces will appear here once the agent runs" />
         )}
         {!tracesLoading && traces.length > 0 && (
-          <TraceTable traces={traces} onSelect={selectTrace} onCompare={onCompare} />
+          <TraceTable traces={traces} onSelect={selectTrace} onCompare={onCompare} totalElements={totalElements ?? undefined} />
         )}
       </main>
     </div>
@@ -118,7 +133,7 @@ function LoadingState() {
   )
 }
 
-function EmptyState({ title, subtitle, showIcon }: { title: string; subtitle: string; showIcon?: boolean }) {
+function EmptyState({ title, subtitle, showIcon, children }: { title: string; subtitle: string; showIcon?: boolean; children?: React.ReactNode }) {
   return (
     <div style={{
       display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
@@ -127,6 +142,7 @@ function EmptyState({ title, subtitle, showIcon }: { title: string; subtitle: st
       {showIcon && <Webhook size={32} strokeWidth={1} style={{ opacity: 0.4 }} />}
       <p style={{ fontSize: 13, fontWeight: 500, color: 'var(--text-secondary)', margin: 0 }}>{title}</p>
       <p style={{ fontSize: 11, margin: 0, opacity: 0.6 }}>{subtitle}</p>
+      {children}
     </div>
   )
 }
