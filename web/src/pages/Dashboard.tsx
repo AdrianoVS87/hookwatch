@@ -8,9 +8,26 @@ import MetricsBar from '../components/MetricsBar'
 
 export default function Dashboard({ onCompare }: { onCompare?: () => void }) {
   const { agents, selectedAgentId, loading: agentsLoading, loadAgents, selectAgent } = useAgentStore()
-  const { traces, totalElements, loading: tracesLoading, loadTraces, selectTrace } = useTraceStore()
+  const {
+    traces,
+    totalElements,
+    loading: tracesLoading,
+    loadTraces,
+    selectTrace,
+    availableTags,
+    selectedTags,
+    setSelectedTags,
+    setSelectedTag,
+    loadTags,
+    addTagsToTrace,
+    removeTagFromTrace,
+  } = useTraceStore()
 
   useEffect(() => { loadAgents() }, [loadAgents])
+  useEffect(() => {
+    loadTags()
+  }, [loadTags])
+
   useEffect(() => {
     if (!selectedAgentId) return
     loadTraces(selectedAgentId)
@@ -18,6 +35,14 @@ export default function Dashboard({ onCompare }: { onCompare?: () => void }) {
     const interval = setInterval(() => loadTraces(selectedAgentId), 30_000)
     return () => clearInterval(interval)
   }, [selectedAgentId, loadTraces])
+
+  const toggleTag = (tag: string) => {
+    if (selectedTags.includes(tag)) {
+      setSelectedTags(selectedTags.filter((t) => t !== tag))
+      return
+    }
+    setSelectedTags([...selectedTags, tag])
+  }
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
@@ -73,6 +98,34 @@ export default function Dashboard({ onCompare }: { onCompare?: () => void }) {
             )
           })}
         </div>
+
+        {availableTags.length > 0 && (
+          <div style={{ marginTop: 12, display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+            <span style={{ fontSize: 11, color: 'var(--text-tertiary)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+              Tag filter
+            </span>
+            {availableTags.map((tag) => {
+              const active = selectedTags.includes(tag)
+              return (
+                <button
+                  key={tag}
+                  onClick={() => toggleTag(tag)}
+                  style={{
+                    padding: '3px 10px',
+                    borderRadius: 999,
+                    border: active ? '1px solid rgba(99,102,241,0.45)' : '1px solid var(--border)',
+                    background: active ? 'rgba(99,102,241,0.14)' : 'var(--surface-2)',
+                    color: active ? 'var(--accent-hover)' : 'var(--text-secondary)',
+                    fontSize: 11,
+                    cursor: 'pointer',
+                  }}
+                >
+                  {tag}
+                </button>
+              )
+            })}
+          </div>
+        )}
       </header>
 
       {/* Metrics bar */}
@@ -103,7 +156,15 @@ export default function Dashboard({ onCompare }: { onCompare?: () => void }) {
           <EmptyState title="No traces yet" subtitle="Traces will appear here once the agent runs" />
         )}
         {!tracesLoading && traces.length > 0 && (
-          <TraceTable traces={traces} onSelect={selectTrace} onCompare={onCompare} totalElements={totalElements ?? undefined} />
+          <TraceTable
+            traces={traces}
+            onSelect={selectTrace}
+            onCompare={onCompare}
+            totalElements={totalElements ?? undefined}
+            onTagClick={setSelectedTag}
+            onAddTags={addTagsToTrace}
+            onDeleteTag={removeTagFromTrace}
+          />
         )}
       </main>
     </div>

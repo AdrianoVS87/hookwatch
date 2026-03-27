@@ -30,7 +30,16 @@ export interface Trace {
   totalTokens: number | null
   totalCost: number | null
   metadata: Record<string, unknown> | null
+  tags: string[]
   spans: Span[]
+}
+
+export interface Annotation {
+  id: string
+  traceId: string
+  text: string
+  author: string
+  createdAt: string
 }
 
 export interface Agent {
