@@ -8,8 +8,8 @@ springdoc:
   swagger-ui:
     path: /swagger-ui.html
     disable-swagger-default-url: true
-    customCssUrl: /swagger-ui/hookwatch.css
-    customJs: /swagger-ui/hookwatch.js
+    customCssUrl: /swagger-ui/hookwatch-theme.css
+    customJs: /swagger-ui/hookwatch-branding.js
 
 ---
 spring:
