@@ -32,8 +32,8 @@ public class ApiKeyFilter extends OncePerRequestFilter {
 
         // Skip auth for Swagger UI, actuator, health check, and tenant bootstrap endpoint
         if (path.startsWith("/swagger-ui") || path.startsWith("/v3/api-docs")
-                || path.startsWith("/actuator") || path.equals("/api/v1/tenants")
-                || path.equals("/api/v1/health")) {
+                || path.equals("/api/v1/openapi.json") || path.startsWith("/actuator")
+                || path.equals("/api/v1/tenants") || path.equals("/api/v1/health")) {
             filterChain.doFilter(request, response);
             return;
         }

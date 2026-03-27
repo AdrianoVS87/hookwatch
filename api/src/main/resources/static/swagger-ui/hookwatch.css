@@ -1,0 +1,41 @@
+:root {
+  --hw-bg: #0f172a;
+  --hw-bg-soft: #111c34;
+  --hw-text: #e2e8f0;
+  --hw-accent: #22d3ee;
+}
+
+html, body, .swagger-ui {
+  background: var(--hw-bg) !important;
+  color: var(--hw-text) !important;
+}
+
+.swagger-ui .topbar {
+  background: linear-gradient(90deg, #0b1222 0%, var(--hw-bg) 100%) !important;
+  border-bottom: 1px solid #1e293b;
+}
+
+.swagger-ui .information-container,
+.swagger-ui .scheme-container,
+.swagger-ui .opblock-tag,
+.swagger-ui .opblock,
+.swagger-ui .responses-inner,
+.swagger-ui .model-box,
+.swagger-ui .tab {
+  background: var(--hw-bg-soft) !important;
+  color: var(--hw-text) !important;
+}
+
+.swagger-ui .info .title,
+.swagger-ui .opblock-tag,
+.swagger-ui .opblock-summary-description,
+.swagger-ui .response-col_status,
+.swagger-ui .response-col_description {
+  color: var(--hw-text) !important;
+}
+
+.swagger-ui .btn.execute {
+  background-color: var(--hw-accent) !important;
+  border-color: var(--hw-accent) !important;
+  color: #0f172a !important;
+}
