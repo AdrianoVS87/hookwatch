@@ -9,6 +9,7 @@ import './index.css'
 const TraceView = lazy(() => import('./pages/TraceView'))
 const CompareView = lazy(() => import('./pages/CompareView'))
 const AnalyticsView = lazy(() => import('./pages/AnalyticsView'))
+const SettingsView = lazy(() => import('./pages/Settings'))
 
 type Page = 'dashboard' | 'traces' | 'analytics' | 'compare' | 'settings'
 
@@ -185,21 +186,16 @@ export default function App() {
                 <CompareView onBack={() => setPage('dashboard')} />
               </Suspense>
             )}
-            {page === 'settings'  && <SettingsPage />}
+            {page === 'settings' && (
+              <Suspense fallback={<div style={{ padding: 40, color: 'var(--text-tertiary)' }}>Loading…</div>}>
+                <SettingsView />
+              </Suspense>
+            )}
           </motion.div>
         </AnimatePresence>
       </main>
 
       <CommandPalette />
-    </div>
-  )
-}
-
-function SettingsPage() {
-  return (
-    <div style={{ padding: '40px 48px' }}>
-      <h1 style={{ fontSize: 20, fontWeight: 600, color: 'var(--text-primary)', marginBottom: 8 }}>Settings</h1>
-      <p style={{ color: 'var(--text-secondary)', fontSize: 13 }}>Configuration coming soon.</p>
     </div>
   )
 }

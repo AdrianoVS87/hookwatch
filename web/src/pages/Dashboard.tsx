@@ -3,10 +3,12 @@ import { motion } from 'framer-motion'
 import { Webhook } from 'lucide-react'
 import { useAgentStore } from '../stores/useAgentStore'
 import { useTraceStore } from '../stores/useTraceStore'
+import { useSettingsStore } from '../stores/useSettingsStore'
 import TraceTable from '../components/TraceTable'
 import MetricsBar from '../components/MetricsBar'
 
 export default function Dashboard({ onCompare }: { onCompare?: () => void }) {
+  const autoRefreshSeconds = useSettingsStore((s) => s.settings.autoRefreshSeconds)
   const { agents, selectedAgentId, loading: agentsLoading, loadAgents, selectAgent } = useAgentStore()
   const {
     traces,
@@ -31,10 +33,9 @@ export default function Dashboard({ onCompare }: { onCompare?: () => void }) {
   useEffect(() => {
     if (!selectedAgentId) return
     loadTraces(selectedAgentId)
-    // Auto-refresh every 30s to pick up new traces from live agent
-    const interval = setInterval(() => loadTraces(selectedAgentId), 30_000)
+    const interval = setInterval(() => loadTraces(selectedAgentId), autoRefreshSeconds * 1000)
     return () => clearInterval(interval)
-  }, [selectedAgentId, loadTraces])
+  }, [selectedAgentId, loadTraces, autoRefreshSeconds])
 
   const toggleTag = (tag: string) => {
     if (selectedTags.includes(tag)) {

@@ -11,6 +11,7 @@ import { fetchAnalytics } from '../api/analytics'
 import type { AnalyticsData, DailyUsage } from '../types'
 import { useAgentStore } from '../stores/useAgentStore'
 import { useTraceStore } from '../stores/useTraceStore'
+import { useSettingsStore } from '../stores/useSettingsStore'
 
 // ── helpers ──────────────────────────────────────────────────────────────────
 
@@ -220,10 +221,11 @@ function buildMockData(from: string, to: string): AnalyticsData {
 export default function AnalyticsView() {
   const { agents, selectedAgentId } = useAgentStore()
   const { selectTrace } = useTraceStore()
+  const analyticsDefaultRange = useSettingsStore((s) => s.settings.analyticsDefaultRange)
 
   const defaultRange = (): DateRange => {
-    const r = presetRange('30d')
-    return { ...r, preset: '30d' }
+    const r = presetRange(analyticsDefaultRange)
+    return { ...r, preset: analyticsDefaultRange }
   }
 
   const [range, setRange] = useState<DateRange>(defaultRange)
