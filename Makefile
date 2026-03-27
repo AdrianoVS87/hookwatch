@@ -1,4 +1,4 @@
-.PHONY: up down logs build restart clean deploy rollback postman-export
+.PHONY: up down logs build restart clean deploy rollback postman-export check-route-collisions
 
 up:
 	docker compose up -d
@@ -45,3 +45,6 @@ postman-export:
 	@mkdir -p docs/postman
 	npx --yes openapi-to-postmanv2 -s http://localhost:8080/api/v1/openapi.json -o docs/postman/hookwatch.postman_collection.json -p
 	@echo "Postman collection generated at docs/postman/hookwatch.postman_collection.json"
+
+check-route-collisions:
+	python3 scripts/check_route_basename_collisions.py
