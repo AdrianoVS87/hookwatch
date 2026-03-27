@@ -11,6 +11,8 @@
 [![TypeScript](https://img.shields.io/badge/TypeScript-5-3178c6?logo=typescript&logoColor=white)](https://www.typescriptlang.org)
 [![License](https://img.shields.io/badge/License-MIT-lightgrey)](LICENSE)
 
+**API Docs:** [Swagger UI](http://localhost:8080/swagger-ui/index.html) · [OpenAPI JSON](http://localhost:8080/api/v1/openapi.json)
+
 ---
 
 ## What is HookWatch?
@@ -123,6 +125,7 @@ Services:
 | Web UI | http://localhost:3000 | — |
 | API | http://localhost:8080 | API key: `demo-key-hookwatch` |
 | Swagger UI | http://localhost:8080/swagger-ui/index.html | — |
+| OpenAPI JSON | http://localhost:8080/api/v1/openapi.json | — |
 | PostgreSQL | localhost:5432 | `hookwatch` / `hookwatch` |
 | Redis | localhost:6379 | — |
 
@@ -136,6 +139,9 @@ The `DataSeeder` automatically creates demo data on first startup:
 ## API overview
 
 See [`docs/API.md`](docs/API.md) for the full reference with curl examples.
+
+- Interactive docs: `http://localhost:8080/swagger-ui/index.html`
+- Versioned spec (JSON): `http://localhost:8080/api/v1/openapi.json`
 
 ```bash
 # Create a tenant (one-time, no auth)
@@ -158,6 +164,15 @@ curl -X POST http://localhost:8080/api/v1/traces \
     ]
   }'
 ```
+
+### Export OpenAPI to Postman Collection
+
+```bash
+# Generates docs/postman/hookwatch.postman_collection.json
+make postman-export
+```
+
+This target reads `http://localhost:8080/api/v1/openapi.json` and converts it with `openapi-to-postmanv2` via `npx`.
 
 ---
 
