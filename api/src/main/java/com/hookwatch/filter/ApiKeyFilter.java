@@ -29,11 +29,13 @@ public class ApiKeyFilter extends OncePerRequestFilter {
                                     HttpServletResponse response,
                                     FilterChain filterChain) throws ServletException, IOException {
         String path = request.getRequestURI();
+        String normalizedPath = path == null ? "" : path.replaceAll("/+$", "");
 
-        // Skip auth for Swagger UI, actuator, health check, and tenant bootstrap endpoint
-        if (path.startsWith("/swagger-ui") || path.startsWith("/v3/api-docs")
-                || path.equals("/api/v1/openapi.json") || path.startsWith("/actuator")
-                || path.equals("/api/v1/tenants") || path.equals("/api/v1/health")) {
+        // Skip auth for Swagger UI, API docs, actuator, health check, and tenant bootstrap endpoint.
+        // Use normalized path + startsWith for docs endpoints to be robust across proxies/trailing slashes.
+        if (normalizedPath.startsWith("/swagger-ui") || normalizedPath.startsWith("/v3/api-docs")
+                || normalizedPath.startsWith("/api/v1/openapi.json") || normalizedPath.startsWith("/actuator")
+                || normalizedPath.equals("/api/v1/tenants") || normalizedPath.equals("/api/v1/health")) {
             filterChain.doFilter(request, response);
             return;
         }

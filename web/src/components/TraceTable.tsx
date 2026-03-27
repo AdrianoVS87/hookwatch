@@ -333,8 +333,14 @@ export default function TraceTable({ traces, onSelect, onCompare, totalElements,
       </table>
       {totalElements != null && (
         <div style={{
-          padding: '10px 16px', borderTop: '1px solid rgba(255,255,255,0.04)',
-          fontSize: 11, color: 'var(--text-tertiary)',
+          position: 'sticky',
+          bottom: 0,
+          zIndex: 1,
+          padding: '10px 16px',
+          borderTop: '1px solid rgba(255,255,255,0.04)',
+          background: 'var(--surface)',
+          fontSize: 11,
+          color: 'var(--text-tertiary)',
         }}>
           Showing {traces.length} of {totalElements} traces
         </div>
