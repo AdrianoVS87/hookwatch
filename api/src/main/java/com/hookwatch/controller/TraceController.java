@@ -1,9 +1,12 @@
 package com.hookwatch.controller;
 
 import com.hookwatch.domain.Trace;
+import com.hookwatch.dto.AnnotationCreateRequest;
+import com.hookwatch.dto.AnnotationDto;
 import com.hookwatch.dto.ApiErrorDto;
 import com.hookwatch.dto.TraceComparisonDto;
 import com.hookwatch.dto.TraceDto;
+import com.hookwatch.dto.TraceTagsRequest;
 import com.hookwatch.service.TraceComparisonService;
 import com.hookwatch.service.TraceService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -21,6 +24,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.UUID;
 
 @RestController
@@ -51,7 +55,7 @@ public class TraceController {
     @GetMapping
     @Operation(
             summary = "List traces by agent",
-            description = "Returns paginated trace data for the given agentId."
+            description = "Returns paginated trace data for the given agentId. Optional ?tag filter uses PostgreSQL ANY over trace tags."
     )
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Trace page loaded"),
@@ -59,8 +63,9 @@ public class TraceController {
             @ApiResponse(responseCode = "403", description = "Invalid API key", content = @Content(schema = @Schema(implementation = ApiErrorDto.class)))
     })
     public Page<Trace> list(@RequestParam UUID agentId,
+                            @RequestParam(required = false) String tag,
                             @PageableDefault(size = 20, sort = "startedAt") Pageable pageable) {
-        return traceService.findByAgentId(agentId, pageable);
+        return traceService.findByAgentId(agentId, pageable, tag);
     }
 
     @GetMapping("/{id}")
@@ -78,6 +83,47 @@ public class TraceController {
         return traceService.findById(id)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
+    }
+
+    @PostMapping("/{id}/tags")
+    @Operation(
+            summary = "Merge tags into a trace",
+            description = "Deterministic merge: incoming + existing tags are normalized (trim + lowercase), deduplicated, and persisted sorted lexicographically."
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Trace tags updated"),
+            @ApiResponse(responseCode = "401", description = "Missing API key", content = @Content(schema = @Schema(implementation = ApiErrorDto.class))),
+            @ApiResponse(responseCode = "403", description = "Trace belongs to another tenant", content = @Content(schema = @Schema(implementation = ApiErrorDto.class))),
+            @ApiResponse(responseCode = "404", description = "Trace not found", content = @Content(schema = @Schema(implementation = ApiErrorDto.class)))
+    })
+    public Trace mergeTags(@PathVariable UUID id, @Valid @RequestBody TraceTagsRequest request) {
+        return traceService.mergeTags(id, request.getTags());
+    }
+
+    @DeleteMapping("/{id}/tags/{tag}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    @Operation(summary = "Delete one tag from a trace")
+    @ApiResponses({
+            @ApiResponse(responseCode = "204", description = "Tag removed"),
+            @ApiResponse(responseCode = "401", description = "Missing API key", content = @Content(schema = @Schema(implementation = ApiErrorDto.class))),
+            @ApiResponse(responseCode = "403", description = "Trace belongs to another tenant", content = @Content(schema = @Schema(implementation = ApiErrorDto.class))),
+            @ApiResponse(responseCode = "404", description = "Trace not found", content = @Content(schema = @Schema(implementation = ApiErrorDto.class)))
+    })
+    public void deleteTag(@PathVariable UUID id, @PathVariable String tag) {
+        traceService.deleteTag(id, tag);
+    }
+
+    @PostMapping("/{id}/annotations")
+    @ResponseStatus(HttpStatus.CREATED)
+    @Operation(summary = "Create annotation for trace")
+    public AnnotationDto createAnnotation(@PathVariable UUID id, @Valid @RequestBody AnnotationCreateRequest request) {
+        return traceService.createAnnotation(id, request);
+    }
+
+    @GetMapping("/{id}/annotations")
+    @Operation(summary = "List annotations for trace")
+    public List<AnnotationDto> listAnnotations(@PathVariable UUID id) {
+        return traceService.listAnnotations(id);
     }
 
     @GetMapping("/compare")
