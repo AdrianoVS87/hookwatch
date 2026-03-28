@@ -1,5 +1,4 @@
 import { useEffect } from 'react'
-import { motion } from 'framer-motion'
 import { Webhook } from 'lucide-react'
 import { useAgentStore } from '../stores/useAgentStore'
 import { useTraceStore } from '../stores/useTraceStore'
@@ -9,7 +8,7 @@ import MetricsBar from '../components/MetricsBar'
 
 export default function Dashboard({ onCompare }: { onCompare?: () => void }) {
   const autoRefreshSeconds = useSettingsStore((s) => s.settings.autoRefreshSeconds)
-  const { agents, selectedAgentId, loading: agentsLoading, loadAgents, selectAgent } = useAgentStore()
+  const { agents, selectedAgentId } = useAgentStore()
   const {
     traces,
     totalElements,
@@ -25,10 +24,7 @@ export default function Dashboard({ onCompare }: { onCompare?: () => void }) {
     removeTagFromTrace,
   } = useTraceStore()
 
-  useEffect(() => { loadAgents() }, [loadAgents])
-  useEffect(() => {
-    loadTags()
-  }, [loadTags])
+  useEffect(() => { loadTags() }, [loadTags])
 
   useEffect(() => {
     if (!selectedAgentId) return
@@ -49,59 +45,17 @@ export default function Dashboard({ onCompare }: { onCompare?: () => void }) {
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
       {/* Header */}
       <header style={{
-        padding: '28px 40px 20px',
+        padding: '20px 40px 16px',
         borderBottom: '1px solid var(--border)',
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: availableTags.length > 0 ? 12 : 0 }}>
           <h1 style={{ fontSize: 20, fontWeight: 600, color: 'var(--text-primary)', letterSpacing: '-0.02em', margin: 0 }}>
             Dashboard
           </h1>
-          {selectedAgentId && (
-            <span style={{
-              display: 'inline-flex', alignItems: 'center', gap: 5,
-              fontSize: 10, fontWeight: 600, letterSpacing: '0.08em',
-              textTransform: 'uppercase', padding: '2px 7px', borderRadius: 4,
-              background: 'rgba(16,185,129,0.1)', color: '#10B981',
-              border: '1px solid rgba(16,185,129,0.2)',
-            }}>
-              <span style={{ width: 5, height: 5, borderRadius: '50%', background: '#10B981', animation: 'pulse 2s infinite' }} />
-              Live
-            </span>
-          )}
-        </div>
-
-        {/* Agent pills */}
-        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-          {agentsLoading ? (
-            <>
-              <AgentPillSkeleton />
-              <AgentPillSkeleton />
-            </>
-          ) : agents.map((agent) => {
-            const active = selectedAgentId === agent.id
-            return (
-              <motion.button
-                key={agent.id}
-                whileTap={{ scale: 0.97 }}
-                onClick={() => selectAgent(agent.id)}
-                style={{
-                  padding: '5px 12px',
-                  borderRadius: 20,
-                  border: active ? '1px solid rgba(99,102,241,0.4)' : '1px solid var(--border)',
-                  background: active ? 'rgba(99,102,241,0.12)' : 'var(--surface-2)',
-                  color: active ? 'var(--accent-hover)' : 'var(--text-secondary)',
-                  fontSize: 12, fontWeight: active ? 500 : 400,
-                  cursor: 'pointer', transition: 'all 0.15s ease',
-                }}
-              >
-                {agent.name}
-              </motion.button>
-            )
-          })}
         </div>
 
         {availableTags.length > 0 && (
-          <div style={{ marginTop: 12, display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
             <span style={{ fontSize: 11, color: 'var(--text-tertiary)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
               Tag filter
             </span>
@@ -130,7 +84,7 @@ export default function Dashboard({ onCompare }: { onCompare?: () => void }) {
       </header>
 
       {/* Metrics bar */}
-      <div style={{ marginTop: 24 }}>
+      <div>
         <MetricsBar />
       </div>
 
@@ -138,19 +92,8 @@ export default function Dashboard({ onCompare }: { onCompare?: () => void }) {
       <main style={{ flex: 1, overflow: 'auto' }}>
         {tracesLoading && <LoadingState />}
         {!tracesLoading && !selectedAgentId && (
-          <EmptyState title="Select an agent to view traces" subtitle="Use ⌘K to search" showIcon>
-            {agents.length > 0 && (
-              <button
-                onClick={() => selectAgent(agents[0].id)}
-                style={{
-                  marginTop: 8, padding: '6px 14px', borderRadius: 6,
-                  border: '1px solid var(--border)', background: 'var(--surface-2)',
-                  color: 'var(--text-secondary)', fontSize: 12, cursor: 'pointer',
-                }}
-              >
-                View all agents
-              </button>
-            )}
+          <EmptyState title="Select an agent to view traces" subtitle="Use the agent selector above" showIcon>
+            {agents.length > 0 && null}
           </EmptyState>
         )}
         {!tracesLoading && selectedAgentId && traces.length === 0 && (
@@ -169,15 +112,6 @@ export default function Dashboard({ onCompare }: { onCompare?: () => void }) {
         )}
       </main>
     </div>
-  )
-}
-
-function AgentPillSkeleton() {
-  return (
-    <div style={{
-      width: 100, height: 28, borderRadius: 20,
-      background: 'var(--surface-2)', border: '1px solid var(--border)',
-    }} />
   )
 }
 

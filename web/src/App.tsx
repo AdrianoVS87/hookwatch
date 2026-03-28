@@ -3,6 +3,7 @@ import { AnimatePresence, motion } from 'framer-motion'
 import { LayoutDashboard, GitBranch, GitCompareArrows, Settings, Search, Webhook, ChevronLeft, ChevronRight, BarChart3 } from 'lucide-react'
 import Dashboard from './pages/Dashboard'
 import CommandPalette from './components/CommandPalette'
+import GlobalContextBar from './components/GlobalContextBar'
 import { useUIStore } from './stores/useUIStore'
 import './index.css'
 
@@ -160,7 +161,11 @@ export default function App() {
       </aside>
 
       {/* Main content */}
-      <main style={{ flex: 1, overflow: 'auto', position: 'relative' }}>
+      <main style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', position: 'relative' }}>
+        {/* Global context bar — shown on all data pages */}
+        {page !== 'settings' && <GlobalContextBar />}
+
+        <div style={{ flex: 1, overflow: 'auto' }}>
         <AnimatePresence mode="wait">
           <motion.div
             key={page}
@@ -193,6 +198,7 @@ export default function App() {
             )}
           </motion.div>
         </AnimatePresence>
+        </div>
       </main>
 
       <CommandPalette />
