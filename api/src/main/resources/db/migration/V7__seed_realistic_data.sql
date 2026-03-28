@@ -137,30 +137,32 @@ BEGIN
 
             -- Model selection (weighted random)
             v_model_rand := random();
+            -- Real API pricing (per 1M tokens, March 2026):
+            -- Opus 4.6:   $5 input / $25 output
+            -- Sonnet 4.6: $3 input / $15 output
+            -- Haiku 4.5:  $1 input / $5 output
+            -- Codex 5.3:  $1.75 input / $14 output
+
             IF v_model_rand < 0.15 THEN
                 v_model := 'claude-opus-4-6';
-                -- total tokens: 80k-200k
                 v_input_tokens  := 60000 + floor(random() * 80000)::INT;
                 v_output_tokens := 20000 + floor(random() * 40000)::INT;
-                v_cost          := 1.50 + power(random(), 7) * 6.50;
+                v_cost := round((v_input_tokens / 1000000.0 * 5.0 + v_output_tokens / 1000000.0 * 25.0)::NUMERIC, 6);
             ELSIF v_model_rand < 0.65 THEN
                 v_model := 'claude-sonnet-4-6';
-                -- total tokens: 20k-80k
                 v_input_tokens  := 12000 + floor(random() * 38000)::INT;
                 v_output_tokens := 8000  + floor(random() * 22000)::INT;
-                v_cost          := 0.15  + power(random(), 7) * 1.85;
+                v_cost := round((v_input_tokens / 1000000.0 * 3.0 + v_output_tokens / 1000000.0 * 15.0)::NUMERIC, 6);
             ELSIF v_model_rand < 0.90 THEN
                 v_model := 'claude-haiku-4-5';
-                -- total tokens: 5k-20k
                 v_input_tokens  := 3000  + floor(random() * 10000)::INT;
                 v_output_tokens := 2000  + floor(random() * 5000)::INT;
-                v_cost          := 0.01  + power(random(), 7) * 0.09;
+                v_cost := round((v_input_tokens / 1000000.0 * 1.0 + v_output_tokens / 1000000.0 * 5.0)::NUMERIC, 6);
             ELSE
                 v_model := 'codex-5.3';
-                -- total tokens: 50k-150k
                 v_input_tokens  := 30000 + floor(random() * 60000)::INT;
                 v_output_tokens := 20000 + floor(random() * 40000)::INT;
-                v_cost          := 0.50  + power(random(), 7) * 2.50;
+                v_cost := round((v_input_tokens / 1000000.0 * 1.75 + v_output_tokens / 1000000.0 * 14.0)::NUMERIC, 6);
             END IF;
 
             v_total_tokens := v_input_tokens + v_output_tokens;
