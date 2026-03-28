@@ -13,6 +13,7 @@ import { useAgentStore } from '../stores/useAgentStore'
 import { useTraceStore } from '../stores/useTraceStore'
 import { useSettingsStore } from '../stores/useSettingsStore'
 
+
 // ── helpers ──────────────────────────────────────────────────────────────────
 
 function fmtCost(n: number): string {
@@ -220,7 +221,7 @@ function buildMockData(from: string, to: string): AnalyticsData {
 
 export default function AnalyticsView() {
   const { agents, selectedAgentId } = useAgentStore()
-  const { selectTrace } = useTraceStore()
+  const { selectTrace, selectedModel } = useTraceStore()
   const analyticsDefaultRange = useSettingsStore((s) => s.settings.analyticsDefaultRange)
 
   const defaultRange = (): DateRange => {
@@ -233,10 +234,10 @@ export default function AnalyticsView() {
   const [loading, setLoading] = useState(false)
   const [usingMock, setUsingMock] = useState(false)
 
-  const load = useCallback(async (agentId: string, r: DateRange) => {
+  const load = useCallback(async (agentId: string, r: DateRange, model?: string | null) => {
     setLoading(true)
     try {
-      const result = await fetchAnalytics(agentId, r.from, r.to)
+      const result = await fetchAnalytics(agentId, r.from, r.to, 'day', model)
       setData(result)
       setUsingMock(false)
     } catch {
@@ -250,11 +251,11 @@ export default function AnalyticsView() {
 
   useEffect(() => {
     if (selectedAgentId) {
-      load(selectedAgentId, range)
+      load(selectedAgentId, range, selectedModel)
     } else if (agents.length > 0) {
-      load(agents[0].id, range)
+      load(agents[0].id, range, selectedModel)
     }
-  }, [selectedAgentId, range, load, agents])
+  }, [selectedAgentId, range, load, agents, selectedModel])
 
   const handleRangeChange = (r: DateRange) => {
     setRange(r)

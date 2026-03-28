@@ -10,10 +10,12 @@ interface TraceState {
   loading: boolean
   availableTags: string[]
   selectedTags: string[]
+  selectedModel: string | null
   loadTraces: (agentId: string) => Promise<void>
   loadTags: () => Promise<void>
   setSelectedTags: (tags: string[]) => void
   setSelectedTag: (tag: string) => void
+  setSelectedModel: (model: string | null) => void
   addTagsToTrace: (traceId: string, tags: string[]) => Promise<void>
   removeTagFromTrace: (traceId: string, tag: string) => Promise<void>
   selectTrace: (id: string) => Promise<void>
@@ -35,6 +37,18 @@ function applyTagFilter(traces: Trace[], selectedTags: string[]): Trace[] {
   })
 }
 
+function applyModelFilter(traces: Trace[], selectedModel: string | null): Trace[] {
+  if (!selectedModel) return traces
+  return traces.filter((trace) => {
+    const model = trace.metadata?.model as string | undefined
+    return model === selectedModel
+  })
+}
+
+function applyFilters(traces: Trace[], selectedTags: string[], selectedModel: string | null): Trace[] {
+  return applyModelFilter(applyTagFilter(traces, selectedTags), selectedModel)
+}
+
 function updateTraceList(traces: Trace[], updated: Trace): Trace[] {
   return traces.map((trace) => (trace.id === updated.id ? updated : trace))
 }
@@ -47,14 +61,15 @@ export const useTraceStore = create<TraceState>((set, get) => ({
   loading: false,
   availableTags: [],
   selectedTags: [],
+  selectedModel: null,
   loadTraces: async (agentId: string) => {
     set({ loading: true })
     try {
       const page = await fetchTraces(agentId)
-      const selectedTags = get().selectedTags
+      const { selectedTags, selectedModel } = get()
       set({
         rawTraces: page.content,
-        traces: applyTagFilter(page.content, selectedTags),
+        traces: applyFilters(page.content, selectedTags, selectedModel),
         totalElements: page.totalElements,
         loading: false,
       })
@@ -72,10 +87,17 @@ export const useTraceStore = create<TraceState>((set, get) => ({
   },
   setSelectedTags: (tags: string[]) => {
     const normalized = Array.from(new Set(tags.map(normalizeTag).filter(Boolean))).sort()
-    const rawTraces = get().rawTraces
+    const { rawTraces, selectedModel } = get()
     set({
       selectedTags: normalized,
-      traces: applyTagFilter(rawTraces, normalized),
+      traces: applyFilters(rawTraces, normalized, selectedModel),
+    })
+  },
+  setSelectedModel: (model: string | null) => {
+    const { rawTraces, selectedTags } = get()
+    set({
+      selectedModel: model,
+      traces: applyFilters(rawTraces, selectedTags, model),
     })
   },
   setSelectedTag: (tag: string) => {
@@ -97,7 +119,7 @@ export const useTraceStore = create<TraceState>((set, get) => ({
     const rawTraces = updateTraceList(state.rawTraces, updated)
     set({
       rawTraces,
-      traces: applyTagFilter(rawTraces, state.selectedTags),
+      traces: applyFilters(rawTraces, state.selectedTags, state.selectedModel),
       selectedTrace: state.selectedTrace?.id === updated.id ? updated : state.selectedTrace,
     })
     await get().loadTags()
@@ -109,7 +131,7 @@ export const useTraceStore = create<TraceState>((set, get) => ({
     const rawTraces = updateTraceList(state.rawTraces, refreshed)
     set({
       rawTraces,
-      traces: applyTagFilter(rawTraces, state.selectedTags),
+      traces: applyFilters(rawTraces, state.selectedTags, state.selectedModel),
       selectedTrace: state.selectedTrace?.id === refreshed.id ? refreshed : state.selectedTrace,
     })
     await get().loadTags()
