@@ -46,7 +46,8 @@ public class AnalyticsController {
             @RequestParam UUID agentId,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to,
-            @RequestParam(defaultValue = "day") String granularity) {
+            @RequestParam(defaultValue = "day") String granularity,
+            @RequestParam(required = false) String model) {
 
         UUID tenantId = TenantContext.get();
 
@@ -65,7 +66,10 @@ public class AnalyticsController {
                     "'from' date must be before or equal to 'to' date");
         }
 
-        AnalyticsDto result = analyticsService.getAnalytics(agentId, from, to, granularity);
+        // Normalize blank string to null
+        String modelFilter = (model != null && !model.isBlank()) ? model.trim() : null;
+
+        AnalyticsDto result = analyticsService.getAnalytics(agentId, from, to, granularity, modelFilter);
         return ResponseEntity.ok(result);
     }
 }
