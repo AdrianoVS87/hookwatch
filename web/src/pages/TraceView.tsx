@@ -3,6 +3,7 @@ import { ArrowLeft, ChevronDown, ChevronUp, GitBranch, StickyNote } from 'lucide
 import { useTraceStore } from '../stores/useTraceStore'
 import TraceCanvas from '../components/TraceCanvas'
 import SpanDetail from '../components/SpanDetail'
+import TraceSelector from '../components/TraceSelector'
 import type { Annotation, Span } from '../types'
 import { createAnnotation, fetchAnnotations } from '../api/traces'
 
@@ -11,13 +12,16 @@ const STATUS_COLOR: Record<string, string> = {
 }
 
 export default function TraceView() {
-  const { selectedTrace, clearTrace } = useTraceStore()
+  const { selectedTrace, clearTrace, selectTrace, traces, rawTraces } = useTraceStore()
   const [activeSpan, setActiveSpan] = useState<Span | null>(null)
   const [annotations, setAnnotations] = useState<Annotation[]>([])
   const [annotationOpen, setAnnotationOpen] = useState(true)
   const [text, setText] = useState('')
   const [author, setAuthor] = useState('adriano')
   const [saving, setSaving] = useState(false)
+
+  // Use rawTraces for full list, fall back to filtered traces
+  const allTraces = rawTraces.length > 0 ? rawTraces : traces
 
   useEffect(() => {
     if (!selectedTrace) {
@@ -32,11 +36,26 @@ export default function TraceView() {
   if (!selectedTrace) {
     return (
       <div style={{ padding: '40px 48px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
           <GitBranch size={18} strokeWidth={1.5} style={{ color: 'var(--accent)' }} />
           <h2 style={{ fontSize: 20, fontWeight: 600, color: 'var(--text-primary)', letterSpacing: '-0.02em' }}>Traces</h2>
         </div>
-        <p style={{ color: 'var(--text-tertiary)', fontSize: 13 }}>Select a trace from the Dashboard to inspect its span graph.</p>
+        {allTraces.length > 0 ? (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+            <TraceSelector
+              traces={allTraces}
+              selectedTraceId={null}
+              onSelect={selectTrace}
+              showNavigation={false}
+              showCount={false}
+            />
+            <p style={{ color: 'var(--text-tertiary)', fontSize: 13, margin: 0 }}>
+              Select a trace above to inspect its span graph.
+            </p>
+          </div>
+        ) : (
+          <p style={{ color: 'var(--text-tertiary)', fontSize: 13 }}>Select a trace from the Dashboard to inspect its span graph.</p>
+        )}
       </div>
     )
   }
@@ -59,7 +78,7 @@ export default function TraceView() {
       <header style={{
         display: 'flex', alignItems: 'center', gap: 12,
         padding: '12px 20px', borderBottom: '1px solid var(--border)',
-        flexShrink: 0,
+        flexShrink: 0, flexWrap: 'wrap',
       }}>
         <button
           onClick={() => { clearTrace(); setActiveSpan(null) }}
@@ -72,38 +91,53 @@ export default function TraceView() {
           <ArrowLeft size={13} strokeWidth={1.5} />
         </button>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <span style={{ fontSize: 13, fontWeight: 500, color: 'var(--text-primary)', fontFamily: '"SF Mono", monospace' }}>
-            {selectedTrace.id.slice(0, 8)}…
-          </span>
-          <span style={{
-            fontSize: 11, fontWeight: 500,
-            color: STATUS_COLOR[selectedTrace.status],
-            background: `${STATUS_COLOR[selectedTrace.status]}18`,
-            padding: '2px 8px', borderRadius: 4,
-          }}>
-            {selectedTrace.status}
-          </span>
-          {(selectedTrace.tags ?? []).length > 0 && (
-            <div style={{ display: 'flex', gap: 6, marginLeft: 4, flexWrap: 'wrap' }}>
-              {selectedTrace.tags.map((tag) => (
-                <span
-                  key={tag}
-                  style={{
-                    fontSize: 10,
-                    padding: '2px 8px',
-                    borderRadius: 999,
-                    border: '1px solid rgba(99,102,241,0.35)',
-                    color: 'var(--accent-hover)',
-                    background: 'rgba(99,102,241,0.1)',
-                  }}
-                >
-                  {tag}
-                </span>
-              ))}
-            </div>
-          )}
-        </div>
+        {/* Inline trace selector */}
+        {allTraces.length > 0 && (
+          <TraceSelector
+            traces={allTraces}
+            selectedTraceId={selectedTrace.id}
+            onSelect={(id) => { selectTrace(id); setActiveSpan(null) }}
+            showNavigation={true}
+            showCount={true}
+          />
+        )}
+
+        {/* Status + tags (shown when no selector or as supplement) */}
+        {allTraces.length === 0 && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <span style={{ fontSize: 13, fontWeight: 500, color: 'var(--text-primary)', fontFamily: '"SF Mono", monospace' }}>
+              {selectedTrace.id.slice(0, 8)}…
+            </span>
+            <span style={{
+              fontSize: 11, fontWeight: 500,
+              color: STATUS_COLOR[selectedTrace.status],
+              background: `${STATUS_COLOR[selectedTrace.status]}18`,
+              padding: '2px 8px', borderRadius: 4,
+            }}>
+              {selectedTrace.status}
+            </span>
+          </div>
+        )}
+
+        {(selectedTrace.tags ?? []).length > 0 && (
+          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+            {selectedTrace.tags.map((tag) => (
+              <span
+                key={tag}
+                style={{
+                  fontSize: 10,
+                  padding: '2px 8px',
+                  borderRadius: 999,
+                  border: '1px solid rgba(99,102,241,0.35)',
+                  color: 'var(--accent-hover)',
+                  background: 'rgba(99,102,241,0.1)',
+                }}
+              >
+                {tag}
+              </span>
+            ))}
+          </div>
+        )}
 
         <div style={{ marginLeft: 'auto', display: 'flex', gap: 16 }}>
           {selectedTrace.totalTokens != null && (
