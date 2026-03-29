@@ -242,7 +242,7 @@ export default function TraceTable({ traces, onSelect, onCompare, totalElements,
                 <td style={{ padding: '12px 4px 12px 12px', width: 32 }}>
                   <input
                     type="checkbox"
-                    checked={isSelected}
+                    checked={isCompareSelected}
                     onClick={(e) => e.stopPropagation()}
                     onChange={() => toggleTrace(trace.id)}
                     style={{ cursor: 'pointer', accentColor: 'var(--accent)' }}
