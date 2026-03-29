@@ -4,6 +4,7 @@ import { ArrowUp, ArrowDown, GitCompareArrows, Plus } from 'lucide-react'
 import type { Trace, TraceStatus, Score } from '../types'
 import { fetchTraceScores } from '../api/traces'
 import { useCompareStore } from '../stores/useCompareStore'
+import { useTraceStore } from '../stores/useTraceStore'
 
 interface Props {
   traces: Trace[]
@@ -13,6 +14,7 @@ interface Props {
   onTagClick?: (tag: string) => void
   onAddTags?: (traceId: string, tags: string[]) => Promise<void> | void
   onDeleteTag?: (traceId: string, tag: string) => Promise<void> | void
+  selectedTraceId?: string | null
 }
 
 type SortKey = 'status' | 'totalTokens' | 'totalCost' | 'startedAt'
@@ -90,11 +92,13 @@ function ScoreBadge({ score }: { score: Score }) {
   return null
 }
 
-export default function TraceTable({ traces, onSelect, onCompare, totalElements, onTagClick, onAddTags }: Props) {
+export default function TraceTable({ traces, onSelect, onCompare, totalElements, onTagClick, onAddTags, selectedTraceId: selectedTraceIdProp }: Props) {
   const [sortKey, setSortKey] = useState<SortKey>('startedAt')
   const [sortAsc, setSortAsc] = useState(false)
   const [traceScores, setTraceScores] = useState<Record<string, Score[]>>({})
   const { selectedTraces, toggleTrace } = useCompareStore()
+  const storeSelectedTrace = useTraceStore((s) => s.selectedTrace)
+  const selectedTraceId = selectedTraceIdProp ?? storeSelectedTrace?.id ?? null
   const hasScores = traces.some(t => (traceScores[t.id] ?? []).length > 0)
 
   useEffect(() => {
@@ -205,14 +209,17 @@ export default function TraceTable({ traces, onSelect, onCompare, totalElements,
           {sorted.map((trace, i) => {
             const sc = STATUS_CONFIG[trace.status]
             const scores = traceScores[trace.id] ?? []
-            const isSelected = selectedTraces.includes(trace.id)
+            const isCompareSelected = selectedTraces.includes(trace.id)
+            const isViewing = trace.id === selectedTraceId
             const isFailed = trace.status === 'FAILED'
             const model = (trace.metadata?.model as string) ?? null
-            const rowBg = isSelected
-              ? 'rgba(99,102,241,0.06)'
-              : isFailed
-                ? 'rgba(239,68,68,0.06)'
-                : i % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.015)'
+            const rowBg = isViewing
+              ? 'rgba(99,102,241,0.12)'
+              : isCompareSelected
+                ? 'rgba(99,102,241,0.06)'
+                : isFailed
+                  ? 'rgba(239,68,68,0.06)'
+                  : i % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.015)'
             return (
               <motion.tr
                 key={trace.id}
@@ -223,10 +230,14 @@ export default function TraceTable({ traces, onSelect, onCompare, totalElements,
                 style={{
                   borderBottom: '1px solid rgba(255,255,255,0.04)', cursor: 'pointer',
                   background: rowBg,
-                  borderLeft: isSelected ? '2px solid var(--accent)' : '2px solid transparent',
+                  borderLeft: isViewing
+                    ? '3px solid var(--accent)'
+                    : isCompareSelected
+                      ? '2px solid var(--accent)'
+                      : '3px solid transparent',
                 }}
-                onMouseEnter={(e) => { if (!isSelected) (e.currentTarget as HTMLTableRowElement).style.background = 'var(--surface-2)' }}
-                onMouseLeave={(e) => { if (!isSelected) (e.currentTarget as HTMLTableRowElement).style.background = rowBg }}
+                onMouseEnter={(e) => { if (!isViewing && !isCompareSelected) (e.currentTarget as HTMLTableRowElement).style.background = 'var(--surface-2)' }}
+                onMouseLeave={(e) => { if (!isViewing && !isCompareSelected) (e.currentTarget as HTMLTableRowElement).style.background = rowBg }}
               >
                 <td style={{ padding: '12px 4px 12px 12px', width: 32 }}>
                   <input
@@ -248,6 +259,17 @@ export default function TraceTable({ traces, onSelect, onCompare, totalElements,
                       <span style={{ width: 5, height: 5, borderRadius: '50%', background: sc.dot, flexShrink: 0 }} />
                       {sc.label}
                     </span>
+                    {isViewing && (
+                      <span style={{
+                        display: 'inline-flex', alignItems: 'center', gap: 4,
+                        fontSize: 10, fontWeight: 600,
+                        color: 'var(--accent-hover)',
+                        paddingLeft: 8,
+                        letterSpacing: '0.01em',
+                      }}>
+                        ▸ Viewing
+                      </span>
+                    )}
                     {model && (
                       <span style={{ fontSize: 10, color: 'var(--text-tertiary)', paddingLeft: 8 }}>
                         {model}
