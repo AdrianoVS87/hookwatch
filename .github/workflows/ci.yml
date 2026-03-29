@@ -63,7 +63,9 @@ jobs:
             git pull origin main
             docker compose build api --no-cache
 
-            # Rolling restart
+            # Stop and remove conflicting containers, then start fresh
+            docker compose stop api 2>/dev/null || true
+            docker compose rm -f api 2>/dev/null || true
             docker compose up -d --no-deps api
 
             # Wait for startup
