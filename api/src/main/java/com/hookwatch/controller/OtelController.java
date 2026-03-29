@@ -3,12 +3,17 @@ package com.hookwatch.controller;
 import com.hookwatch.domain.Agent;
 import com.hookwatch.domain.Span;
 import com.hookwatch.domain.Trace;
+import com.hookwatch.dto.ApiErrorDto;
 import com.hookwatch.dto.OtelExportDto;
 import com.hookwatch.repository.AgentRepository;
 import com.hookwatch.repository.TraceRepository;
 import com.hookwatch.security.TenantContext;
 import com.hookwatch.service.OtelMapper;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -23,19 +28,24 @@ import java.util.UUID;
 
 @RestController
 @RequiredArgsConstructor
-@Tag(name = "OpenTelemetry")
+@Tag(name = "Traces", description = "OTEL import/export interoperability for traces")
 public class OtelController {
 
     private final TraceRepository traceRepository;
     private final AgentRepository agentRepository;
     private final OtelMapper otelMapper;
 
-    /**
-     * Export a HookWatch trace in OTLP JSON format.
-     * GET /api/v1/traces/{id}/otel
-     */
     @GetMapping("/api/v1/traces/{id}/otel")
-    @Operation(summary = "Export a trace in OTLP JSON format")
+    @Operation(
+            summary = "Export trace as OTLP JSON",
+            description = "Converts a stored HookWatch trace into OTLP JSON-compatible structure."
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "OTLP export generated"),
+            @ApiResponse(responseCode = "401", description = "Missing API key", content = @Content(schema = @Schema(implementation = ApiErrorDto.class))),
+            @ApiResponse(responseCode = "403", description = "Trace belongs to another tenant", content = @Content(schema = @Schema(implementation = ApiErrorDto.class))),
+            @ApiResponse(responseCode = "404", description = "Trace or agent not found", content = @Content(schema = @Schema(implementation = ApiErrorDto.class)))
+    })
     public ResponseEntity<OtelExportDto> exportOtel(@PathVariable UUID id) {
         UUID tenantId = TenantContext.get();
 
@@ -43,7 +53,6 @@ public class OtelController {
         if (tenantId != null) {
             trace = traceRepository.findByIdAndTenantId(id, tenantId)
                     .orElseThrow(() -> {
-                        // Check if trace exists at all to distinguish 404 vs 403
                         if (traceRepository.existsById(id)) {
                             return new ResponseStatusException(HttpStatus.FORBIDDEN,
                                     "Access denied: trace does not belong to your tenant");
@@ -63,28 +72,30 @@ public class OtelController {
         return ResponseEntity.ok(dto);
     }
 
-    /**
-     * Ingest a trace from OTLP JSON format.
-     * POST /api/v1/ingest/otel
-     * Returns the created trace ID plus span count.
-     */
     @PostMapping("/api/v1/ingest/otel")
     @ResponseStatus(HttpStatus.CREATED)
-    @Operation(summary = "Ingest a trace from OTLP JSON format")
+    @Operation(
+            summary = "Ingest OTLP JSON trace",
+            description = "Parses OTLP JSON payload and persists it as HookWatch trace + spans."
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "201", description = "Trace ingested"),
+            @ApiResponse(responseCode = "401", description = "Missing API key", content = @Content(schema = @Schema(implementation = ApiErrorDto.class))),
+            @ApiResponse(responseCode = "403", description = "Agent belongs to another tenant", content = @Content(schema = @Schema(implementation = ApiErrorDto.class))),
+            @ApiResponse(responseCode = "404", description = "Agent not found", content = @Content(schema = @Schema(implementation = ApiErrorDto.class))),
+            @ApiResponse(responseCode = "422", description = "Invalid OTLP payload", content = @Content(schema = @Schema(implementation = ApiErrorDto.class)))
+    })
     public ResponseEntity<Map<String, Object>> ingestOtel(@RequestBody OtelExportDto dto) {
         UUID tenantId = TenantContext.get();
 
         Trace trace = otelMapper.fromOtel(dto);
 
-        // Resolve agentId: if present in attributes and belongs to tenant, use it.
-        // Otherwise require caller to pass agentId via attributes; if missing, reject.
         UUID agentId = trace.getAgentId();
         if (agentId == null) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
                     "Missing hookwatch.agent.id in resource attributes");
         }
 
-        // Validate agent belongs to tenant
         if (tenantId != null) {
             agentRepository.findByIdAndTenantId(agentId, tenantId)
                     .orElseThrow(() -> new ResponseStatusException(HttpStatus.FORBIDDEN,
@@ -95,7 +106,6 @@ public class OtelController {
                             "Agent not found"));
         }
 
-        // Wire up traceId on all spans
         Trace saved = persistTrace(trace, agentId);
 
         Map<String, Object> response = new LinkedHashMap<>();
@@ -106,15 +116,9 @@ public class OtelController {
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
-    /**
-     * Persists a Trace (constructed from OTLP) with all its spans.
-     * Save in two steps while keeping the same managed collection instance
-     * to avoid orphan-removal dereference issues.
-     */
     private Trace persistTrace(Trace trace, UUID agentId) {
         trace.setAgentId(agentId);
 
-        // Ensure startedAt is set
         if (trace.getStartedAt() == null) {
             trace.setStartedAt(Instant.now());
         }
@@ -126,10 +130,8 @@ public class OtelController {
         java.util.List<Span> incomingSpans = new java.util.ArrayList<>(trace.getSpans());
         trace.getSpans().clear();
 
-        // 1) Persist trace first so it gets generated UUID
         Trace saved = traceRepository.save(trace);
 
-        // 2) Attach spans to the same managed collection instance
         for (Span span : incomingSpans) {
             span.setId(null);
             span.setTraceId(saved.getId());

@@ -3,12 +3,14 @@ import { AnimatePresence, motion } from 'framer-motion'
 import { LayoutDashboard, GitBranch, GitCompareArrows, Settings, Search, Webhook, ChevronLeft, ChevronRight, BarChart3 } from 'lucide-react'
 import Dashboard from './pages/Dashboard'
 import CommandPalette from './components/CommandPalette'
+import GlobalContextBar from './components/GlobalContextBar'
 import { useUIStore } from './stores/useUIStore'
 import './index.css'
 
 const TraceView = lazy(() => import('./pages/TraceView'))
 const CompareView = lazy(() => import('./pages/CompareView'))
 const AnalyticsView = lazy(() => import('./pages/AnalyticsView'))
+const SettingsView = lazy(() => import('./pages/Settings'))
 
 type Page = 'dashboard' | 'traces' | 'analytics' | 'compare' | 'settings'
 
@@ -159,7 +161,11 @@ export default function App() {
       </aside>
 
       {/* Main content */}
-      <main style={{ flex: 1, overflow: 'auto', position: 'relative' }}>
+      <main style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', position: 'relative' }}>
+        {/* Global context bar — shown on all data pages */}
+        {page !== 'settings' && <GlobalContextBar />}
+
+        <div style={{ flex: 1, overflow: 'auto' }}>
         <AnimatePresence mode="wait">
           <motion.div
             key={page}
@@ -185,21 +191,17 @@ export default function App() {
                 <CompareView onBack={() => setPage('dashboard')} />
               </Suspense>
             )}
-            {page === 'settings'  && <SettingsPage />}
+            {page === 'settings' && (
+              <Suspense fallback={<div style={{ padding: 40, color: 'var(--text-tertiary)' }}>Loading…</div>}>
+                <SettingsView />
+              </Suspense>
+            )}
           </motion.div>
         </AnimatePresence>
+        </div>
       </main>
 
       <CommandPalette />
-    </div>
-  )
-}
-
-function SettingsPage() {
-  return (
-    <div style={{ padding: '40px 48px' }}>
-      <h1 style={{ fontSize: 20, fontWeight: 600, color: 'var(--text-primary)', marginBottom: 8 }}>Settings</h1>
-      <p style={{ color: 'var(--text-secondary)', fontSize: 13 }}>Configuration coming soon.</p>
     </div>
   )
 }

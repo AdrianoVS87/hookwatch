@@ -2,6 +2,15 @@ spring:
   application:
     name: hookwatch-api
 
+springdoc:
+  api-docs:
+    path: /api/v1/openapi.json
+  swagger-ui:
+    path: /swagger-ui.html
+    disable-swagger-default-url: true
+    customCssUrl: /swagger-ui/hookwatch-theme.css
+    customJs: /swagger-ui/hookwatch-branding.js
+
 ---
 spring:
   config:

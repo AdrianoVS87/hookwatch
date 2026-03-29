@@ -12,6 +12,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Guard static route collisions
+        run: python3 scripts/check_route_basename_collisions.py
       - uses: actions/setup-java@v4
         with:
           java-version: "21"
@@ -25,6 +27,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Guard static route collisions
+        run: python3 scripts/check_route_basename_collisions.py
       - uses: actions/setup-node@v4
         with:
           node-version: "20"

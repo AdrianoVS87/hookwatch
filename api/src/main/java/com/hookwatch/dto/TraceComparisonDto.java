@@ -1,31 +1,44 @@
 package com.hookwatch.dto;
 
 import com.hookwatch.domain.Trace;
+import io.swagger.v3.oas.annotations.media.Schema;
+
 import java.util.List;
 
-/**
- * Side-by-side trace comparison result.
- * Inspired by LangSmith comparison view for evaluating prompt/model changes.
- */
+@Schema(description = "Side-by-side trace comparison result")
 public record TraceComparisonDto(
-    Trace trace1,
-    Trace trace2,
-    Delta delta
+        @Schema(description = "Left trace")
+        Trace trace1,
+        @Schema(description = "Right trace")
+        Trace trace2,
+        @Schema(description = "Computed deltas")
+        Delta delta
 ) {
     public record Delta(
-        int tokensDiff,
-        double costDiff,
-        long latencyDiffMs,
-        boolean statusMatch,
-        int spanCountDiff,
-        List<SpanComparison> spanBySpanComparison
+            @Schema(description = "Token count difference", example = "-120")
+            int tokensDiff,
+            @Schema(description = "Cost difference in USD", example = "-0.004")
+            double costDiff,
+            @Schema(description = "Latency difference in milliseconds", example = "85")
+            long latencyDiffMs,
+            @Schema(description = "Whether statuses are equal", example = "true")
+            boolean statusMatch,
+            @Schema(description = "Span count difference", example = "2")
+            int spanCountDiff,
+            @Schema(description = "Span-by-span comparisons")
+            List<SpanComparison> spanBySpanComparison
     ) {}
 
     public record SpanComparison(
-        String span1Name,
-        String span2Name,
-        int tokensDiff,
-        long latencyDiffMs,
-        boolean statusMatch
+            @Schema(description = "Name of span from first trace", example = "retrieval")
+            String span1Name,
+            @Schema(description = "Name of span from second trace", example = "retrieval")
+            String span2Name,
+            @Schema(description = "Token difference", example = "40")
+            int tokensDiff,
+            @Schema(description = "Latency difference in milliseconds", example = "12")
+            long latencyDiffMs,
+            @Schema(description = "Whether statuses are equal", example = "true")
+            boolean statusMatch
     ) {}
 }

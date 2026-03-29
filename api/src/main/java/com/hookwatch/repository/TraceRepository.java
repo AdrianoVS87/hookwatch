@@ -9,6 +9,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -31,6 +32,59 @@ public interface TraceRepository extends JpaRepository<Trace, UUID> {
     Page<Trace> findByAgentIdAndTenantId(@Param("agentId") UUID agentId,
                                           @Param("tenantId") UUID tenantId,
                                           Pageable pageable);
+
+    @Query(value = """
+        SELECT t.*
+        FROM traces t
+        JOIN agents a ON a.id = t.agent_id
+        WHERE t.agent_id = :agentId
+          AND a.tenant_id = :tenantId
+          AND :tag = ANY(t.tags)
+        """, countQuery = """
+        SELECT COUNT(*)
+        FROM traces t
+        JOIN agents a ON a.id = t.agent_id
+        WHERE t.agent_id = :agentId
+          AND a.tenant_id = :tenantId
+          AND :tag = ANY(t.tags)
+        """, nativeQuery = true)
+    Page<Trace> findByAgentIdAndTenantIdAndTag(@Param("agentId") UUID agentId,
+                                                @Param("tenantId") UUID tenantId,
+                                                @Param("tag") String tag,
+                                                Pageable pageable);
+
+    @Query(value = """
+        SELECT t.*
+        FROM traces t
+        WHERE t.agent_id = :agentId
+          AND :tag = ANY(t.tags)
+        """, countQuery = """
+        SELECT COUNT(*)
+        FROM traces t
+        WHERE t.agent_id = :agentId
+          AND :tag = ANY(t.tags)
+        """, nativeQuery = true)
+    Page<Trace> findByAgentIdAndTag(@Param("agentId") UUID agentId,
+                                    @Param("tag") String tag,
+                                    Pageable pageable);
+
+    @Query(value = """
+        SELECT DISTINCT tag
+        FROM traces t
+        JOIN agents a ON a.id = t.agent_id
+        CROSS JOIN LATERAL unnest(t.tags) AS tag
+        WHERE a.tenant_id = :tenantId
+        ORDER BY tag
+        """, nativeQuery = true)
+    List<String> findUniqueTagsByTenantId(@Param("tenantId") UUID tenantId);
+
+    @Query(value = """
+        SELECT DISTINCT tag
+        FROM traces t
+        CROSS JOIN LATERAL unnest(t.tags) AS tag
+        ORDER BY tag
+        """, nativeQuery = true)
+    List<String> findUniqueTags();
 
     /**
      * Finds a trace by ID, verifying the owning agent belongs to the given tenant.

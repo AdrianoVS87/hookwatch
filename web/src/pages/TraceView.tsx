@@ -1,9 +1,10 @@
-import { useState } from 'react'
-import { ArrowLeft, GitBranch } from 'lucide-react'
+import { useEffect, useState, type CSSProperties } from 'react'
+import { ArrowLeft, ChevronDown, ChevronUp, GitBranch, StickyNote } from 'lucide-react'
 import { useTraceStore } from '../stores/useTraceStore'
 import TraceCanvas from '../components/TraceCanvas'
 import SpanDetail from '../components/SpanDetail'
-import type { Span } from '../types'
+import type { Annotation, Span } from '../types'
+import { createAnnotation, fetchAnnotations } from '../api/traces'
 
 const STATUS_COLOR: Record<string, string> = {
   COMPLETED: '#10B981', RUNNING: '#6366F1', FAILED: '#EF4444',
@@ -12,6 +13,21 @@ const STATUS_COLOR: Record<string, string> = {
 export default function TraceView() {
   const { selectedTrace, clearTrace } = useTraceStore()
   const [activeSpan, setActiveSpan] = useState<Span | null>(null)
+  const [annotations, setAnnotations] = useState<Annotation[]>([])
+  const [annotationOpen, setAnnotationOpen] = useState(true)
+  const [text, setText] = useState('')
+  const [author, setAuthor] = useState('adriano')
+  const [saving, setSaving] = useState(false)
+
+  useEffect(() => {
+    if (!selectedTrace) {
+      setAnnotations([])
+      return
+    }
+    fetchAnnotations(selectedTrace.id)
+      .then(setAnnotations)
+      .catch(() => setAnnotations([]))
+  }, [selectedTrace?.id])
 
   if (!selectedTrace) {
     return (
@@ -23,6 +39,19 @@ export default function TraceView() {
         <p style={{ color: 'var(--text-tertiary)', fontSize: 13 }}>Select a trace from the Dashboard to inspect its span graph.</p>
       </div>
     )
+  }
+
+  const submitAnnotation = async () => {
+    if (!text.trim() || !author.trim()) return
+    setSaving(true)
+    try {
+      const created = await createAnnotation(selectedTrace.id, text.trim(), author.trim())
+      setAnnotations((prev) => [created, ...prev])
+      setText('')
+      setAnnotationOpen(true)
+    } finally {
+      setSaving(false)
+    }
   }
 
   return (
@@ -55,6 +84,25 @@ export default function TraceView() {
           }}>
             {selectedTrace.status}
           </span>
+          {(selectedTrace.tags ?? []).length > 0 && (
+            <div style={{ display: 'flex', gap: 6, marginLeft: 4, flexWrap: 'wrap' }}>
+              {selectedTrace.tags.map((tag) => (
+                <span
+                  key={tag}
+                  style={{
+                    fontSize: 10,
+                    padding: '2px 8px',
+                    borderRadius: 999,
+                    border: '1px solid rgba(99,102,241,0.35)',
+                    color: 'var(--accent-hover)',
+                    background: 'rgba(99,102,241,0.1)',
+                  }}
+                >
+                  {tag}
+                </span>
+              ))}
+            </div>
+          )}
         </div>
 
         <div style={{ marginLeft: 'auto', display: 'flex', gap: 16 }}>
@@ -84,8 +132,105 @@ export default function TraceView() {
           <SpanDetail span={activeSpan} onClose={() => setActiveSpan(null)} />
         )}
       </div>
+
+      <section style={{
+        borderTop: '1px solid var(--border)',
+        background: 'var(--surface)',
+        flexShrink: 0,
+      }}>
+        <button
+          onClick={() => setAnnotationOpen((prev) => !prev)}
+          style={{
+            width: '100%',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            background: 'transparent',
+            border: 'none',
+            color: 'var(--text-primary)',
+            fontSize: 12,
+            padding: '10px 16px',
+            cursor: 'pointer',
+          }}
+        >
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+            <StickyNote size={14} strokeWidth={1.6} />
+            Annotations ({annotations.length})
+          </span>
+          {annotationOpen ? <ChevronDown size={14} /> : <ChevronUp size={14} />}
+        </button>
+
+        {annotationOpen && (
+          <div style={{ padding: '0 16px 14px', display: 'grid', gap: 10, maxHeight: 260, overflow: 'auto' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '140px 1fr auto', gap: 8 }}>
+              <input
+                value={author}
+                onChange={(e) => setAuthor(e.target.value)}
+                placeholder="author"
+                style={inputStyle}
+              />
+              <input
+                value={text}
+                onChange={(e) => setText(e.target.value)}
+                onKeyDown={(e) => { if (e.key === 'Enter') void submitAnnotation() }}
+                placeholder="Add annotation..."
+                style={inputStyle}
+              />
+              <button
+                onClick={() => void submitAnnotation()}
+                disabled={saving || !text.trim()}
+                style={{
+                  borderRadius: 6,
+                  border: '1px solid rgba(99,102,241,0.4)',
+                  background: 'rgba(99,102,241,0.15)',
+                  color: 'var(--accent-hover)',
+                  padding: '0 12px',
+                  fontSize: 12,
+                  cursor: 'pointer',
+                  opacity: saving ? 0.7 : 1,
+                }}
+              >
+                {saving ? 'Saving…' : 'Add'}
+              </button>
+            </div>
+
+            {annotations.length === 0 ? (
+              <span style={{ color: 'var(--text-tertiary)', fontSize: 12 }}>No annotations yet.</span>
+            ) : (
+              annotations.map((annotation) => (
+                <div
+                  key={annotation.id}
+                  style={{
+                    border: '1px solid var(--border)',
+                    background: 'var(--surface-2)',
+                    borderRadius: 8,
+                    padding: '10px 12px',
+                  }}
+                >
+                  <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, marginBottom: 6 }}>
+                    <span style={{ fontSize: 11, color: 'var(--text-secondary)', fontWeight: 500 }}>{annotation.author}</span>
+                    <span style={{ fontSize: 10, color: 'var(--text-tertiary)' }}>
+                      {new Date(annotation.createdAt).toLocaleString()}
+                    </span>
+                  </div>
+                  <p style={{ margin: 0, fontSize: 12, color: 'var(--text-primary)', lineHeight: 1.45 }}>{annotation.text}</p>
+                </div>
+              ))
+            )}
+          </div>
+        )}
+      </section>
     </div>
   )
+}
+
+const inputStyle: CSSProperties = {
+  borderRadius: 6,
+  border: '1px solid var(--border)',
+  background: 'var(--surface-2)',
+  color: 'var(--text-primary)',
+  padding: '8px 10px',
+  fontSize: 12,
 }
 
 function Stat({ label, value }: { label: string; value: string }) {

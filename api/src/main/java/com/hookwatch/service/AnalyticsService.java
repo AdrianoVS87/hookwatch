@@ -21,19 +21,21 @@ public class AnalyticsService {
     /**
      * Returns analytics for the given agent scoped to the date range [from, to].
      * granularity is accepted but currently only "day" is implemented (date_trunc('day', ...)).
+     * model: optional filter — when non-null, only traces with metadata->>'model' = model are included.
      */
     @Transactional(readOnly = true)
-    public AnalyticsDto getAnalytics(UUID agentId, LocalDate from, LocalDate to, String granularity) {
-        List<AnalyticsDto.DailyUsage> dailyUsage = getDailyUsage(agentId, from, to);
-        List<AnalyticsDto.ModelUsage> byModel = getModelUsage(agentId, from, to);
-        List<AnalyticsDto.TopTrace> topTraces = getTopExpensiveTraces(agentId, from, to);
-        AnalyticsDto.CostTrend costTrend = getCostTrend(agentId, from, to);
+    public AnalyticsDto getAnalytics(UUID agentId, LocalDate from, LocalDate to, String granularity, String model) {
+        List<AnalyticsDto.DailyUsage> dailyUsage = getDailyUsage(agentId, from, to, model);
+        List<AnalyticsDto.ModelUsage> byModel = getModelUsage(agentId, from, to, model);
+        List<AnalyticsDto.TopTrace> topTraces = getTopExpensiveTraces(agentId, from, to, model);
+        AnalyticsDto.CostTrend costTrend = getCostTrend(agentId, from, to, model);
 
         return new AnalyticsDto(dailyUsage, byModel, topTraces, costTrend);
     }
 
     @SuppressWarnings("unchecked")
-    private List<AnalyticsDto.DailyUsage> getDailyUsage(UUID agentId, LocalDate from, LocalDate to) {
+    private List<AnalyticsDto.DailyUsage> getDailyUsage(UUID agentId, LocalDate from, LocalDate to, String model) {
+        String modelClause = model != null ? "AND t.metadata->>'model' = :model" : "";
         String sql = """
                 SELECT
                     date_trunc('day', t.started_at)::date                         AS day,
@@ -49,6 +51,7 @@ public class AnalyticsService {
                 WHERE t.agent_id = :agentId
                   AND t.started_at >= :from
                   AND t.started_at < :to
+                  """ + modelClause + """
                 GROUP BY date_trunc('day', t.started_at)::date
                 ORDER BY day ASC
                 """;
@@ -57,6 +60,7 @@ public class AnalyticsService {
         q.setParameter("agentId", agentId);
         q.setParameter("from", java.sql.Date.valueOf(from));
         q.setParameter("to", java.sql.Date.valueOf(to.plusDays(1)));
+        if (model != null) q.setParameter("model", model);
 
         List<Object[]> rows = q.getResultList();
         List<AnalyticsDto.DailyUsage> result = new ArrayList<>();
@@ -73,7 +77,8 @@ public class AnalyticsService {
     }
 
     @SuppressWarnings("unchecked")
-    private List<AnalyticsDto.ModelUsage> getModelUsage(UUID agentId, LocalDate from, LocalDate to) {
+    private List<AnalyticsDto.ModelUsage> getModelUsage(UUID agentId, LocalDate from, LocalDate to, String model) {
+        String modelClause = model != null ? "AND t.metadata->>'model' = :model" : "";
         String sql = """
                 SELECT
                     COALESCE(s.model, 'unknown')      AS model,
@@ -86,6 +91,7 @@ public class AnalyticsService {
                   AND t.started_at >= :from
                   AND t.started_at < :to
                   AND s.model IS NOT NULL
+                  """ + modelClause + """
                 GROUP BY s.model
                 ORDER BY total_cost DESC
                 """;
@@ -94,21 +100,23 @@ public class AnalyticsService {
         q.setParameter("agentId", agentId);
         q.setParameter("from", java.sql.Date.valueOf(from));
         q.setParameter("to", java.sql.Date.valueOf(to.plusDays(1)));
+        if (model != null) q.setParameter("model", model);
 
         List<Object[]> rows = q.getResultList();
         List<AnalyticsDto.ModelUsage> result = new ArrayList<>();
         for (Object[] row : rows) {
-            String model = (String) row[0];
+            String modelName = (String) row[0];
             int totalTokens = ((Number) row[1]).intValue();
             double totalCost = ((Number) row[2]).doubleValue();
             int traceCount = ((Number) row[3]).intValue();
-            result.add(new AnalyticsDto.ModelUsage(model, totalTokens, totalCost, traceCount));
+            result.add(new AnalyticsDto.ModelUsage(modelName, totalTokens, totalCost, traceCount));
         }
         return result;
     }
 
     @SuppressWarnings("unchecked")
-    private List<AnalyticsDto.TopTrace> getTopExpensiveTraces(UUID agentId, LocalDate from, LocalDate to) {
+    private List<AnalyticsDto.TopTrace> getTopExpensiveTraces(UUID agentId, LocalDate from, LocalDate to, String model) {
+        String modelClause = model != null ? "AND t.metadata->>'model' = :model" : "";
         String sql = """
                 SELECT
                     t.id::text             AS trace_id,
@@ -119,6 +127,7 @@ public class AnalyticsService {
                 WHERE t.agent_id = :agentId
                   AND t.started_at >= :from
                   AND t.started_at < :to
+                  """ + modelClause + """
                 ORDER BY t.total_cost DESC NULLS LAST
                 LIMIT 10
                 """;
@@ -127,6 +136,7 @@ public class AnalyticsService {
         q.setParameter("agentId", agentId);
         q.setParameter("from", java.sql.Date.valueOf(from));
         q.setParameter("to", java.sql.Date.valueOf(to.plusDays(1)));
+        if (model != null) q.setParameter("model", model);
 
         List<Object[]> rows = q.getResultList();
         List<AnalyticsDto.TopTrace> result = new ArrayList<>();
@@ -145,14 +155,14 @@ public class AnalyticsService {
      * - percentChangeVsPreviousPeriod: (currentCost - previousCost) / previousCost * 100
      * - projectedMonthlyCost: (currentPeriodCost / daysInPeriod) * 30
      */
-    private AnalyticsDto.CostTrend getCostTrend(UUID agentId, LocalDate from, LocalDate to) {
+    private AnalyticsDto.CostTrend getCostTrend(UUID agentId, LocalDate from, LocalDate to, String model) {
         long daysInPeriod = java.time.temporal.ChronoUnit.DAYS.between(from, to) + 1;
         if (daysInPeriod <= 0) daysInPeriod = 1;
 
-        double currentCost = sumCost(agentId, from, to);
+        double currentCost = sumCost(agentId, from, to, model);
         LocalDate prevFrom = from.minusDays(daysInPeriod);
         LocalDate prevTo = from.minusDays(1);
-        double previousCost = sumCost(agentId, prevFrom, prevTo);
+        double previousCost = sumCost(agentId, prevFrom, prevTo, model);
 
         double percentChange;
         if (previousCost == 0.0) {
@@ -167,18 +177,20 @@ public class AnalyticsService {
     }
 
     @SuppressWarnings("unchecked")
-    private double sumCost(UUID agentId, LocalDate from, LocalDate to) {
+    private double sumCost(UUID agentId, LocalDate from, LocalDate to, String model) {
+        String modelClause = model != null ? "AND t.metadata->>'model' = :model" : "";
         String sql = """
                 SELECT COALESCE(SUM(t.total_cost), 0)
                 FROM traces t
                 WHERE t.agent_id = :agentId
                   AND t.started_at >= :from
                   AND t.started_at < :to
-                """;
+                  """ + modelClause;
         Query q = em.createNativeQuery(sql);
         q.setParameter("agentId", agentId);
         q.setParameter("from", java.sql.Date.valueOf(from));
         q.setParameter("to", java.sql.Date.valueOf(to.plusDays(1)));
+        if (model != null) q.setParameter("model", model);
         Object result = q.getSingleResult();
         return result == null ? 0.0 : ((Number) result).doubleValue();
     }

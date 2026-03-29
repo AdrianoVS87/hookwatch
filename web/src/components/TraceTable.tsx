@@ -1,11 +1,20 @@
 import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
-import { ArrowUp, ArrowDown, GitCompareArrows } from 'lucide-react'
+import { ArrowUp, ArrowDown, GitCompareArrows, Plus } from 'lucide-react'
 import type { Trace, TraceStatus, Score } from '../types'
 import { fetchTraceScores } from '../api/traces'
 import { useCompareStore } from '../stores/useCompareStore'
 
-interface Props { traces: Trace[]; onSelect: (id: string) => void; onCompare?: () => void; totalElements?: number }
+interface Props {
+  traces: Trace[]
+  onSelect: (id: string) => void
+  onCompare?: () => void
+  totalElements?: number
+  onTagClick?: (tag: string) => void
+  onAddTags?: (traceId: string, tags: string[]) => Promise<void> | void
+  onDeleteTag?: (traceId: string, tag: string) => Promise<void> | void
+}
+
 type SortKey = 'status' | 'totalTokens' | 'totalCost' | 'startedAt'
 
 const STATUS_CONFIG: Record<TraceStatus, { label: string; color: string; bg: string; dot: string }> = {
@@ -81,7 +90,7 @@ function ScoreBadge({ score }: { score: Score }) {
   return null
 }
 
-export default function TraceTable({ traces, onSelect, onCompare, totalElements }: Props) {
+export default function TraceTable({ traces, onSelect, onCompare, totalElements, onTagClick, onAddTags }: Props) {
   const [sortKey, setSortKey] = useState<SortKey>('startedAt')
   const [sortAsc, setSortAsc] = useState(false)
   const [traceScores, setTraceScores] = useState<Record<string, Score[]>>({})
@@ -119,6 +128,15 @@ export default function TraceTable({ traces, onSelect, onCompare, totalElements 
       setSortKey(key)
       setSortAsc(true)
     }
+  }
+
+  const handleAddTags = async (traceId: string) => {
+    if (!onAddTags) return
+    const input = window.prompt('Add tags (comma-separated):')
+    if (!input) return
+    const tags = input.split(',').map((t) => t.trim()).filter(Boolean)
+    if (tags.length === 0) return
+    await onAddTags(traceId, tags)
   }
 
   const Col = ({ label, col, width, align = 'left' }: { label: string; col: SortKey; width?: number; align?: 'left' | 'right' }) => (
@@ -177,6 +195,7 @@ export default function TraceTable({ traces, onSelect, onCompare, totalElements 
             <StaticCol label="Spans" width={70} align="right" />
             <Col label="Tokens" col="totalTokens" width={100} align="right" />
             <Col label="Cost" col="totalCost" width={100} align="right" />
+            <StaticCol label="Tags" width={260} />
             {hasScores && <StaticCol label="Scores" width={140} />}
             <StaticCol label="Duration" width={90} align="right" />
             <Col label="Started" col="startedAt" />
@@ -245,6 +264,51 @@ export default function TraceTable({ traces, onSelect, onCompare, totalElements 
                 <td style={{ padding: '12px 16px', color: 'var(--text-primary)', fontSize: 13, fontVariantNumeric: 'tabular-nums', textAlign: 'right' }}>
                   {trace.totalCost != null ? `$${trace.totalCost.toFixed(4)}` : '—'}
                 </td>
+                <td style={{ padding: '12px 16px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+                    {(trace.tags ?? []).map((tag) => (
+                      <button
+                        key={`${trace.id}-${tag}`}
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          onTagClick?.(tag)
+                        }}
+                        style={{
+                          fontSize: 10,
+                          borderRadius: 999,
+                          border: '1px solid rgba(99,102,241,0.35)',
+                          background: 'rgba(99,102,241,0.10)',
+                          color: 'var(--accent-hover)',
+                          padding: '2px 8px',
+                          cursor: 'pointer',
+                        }}
+                      >
+                        {tag}
+                      </button>
+                    ))}
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        void handleAddTags(trace.id)
+                      }}
+                      title="Add tags"
+                      style={{
+                        width: 20,
+                        height: 20,
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        borderRadius: 999,
+                        border: '1px dashed var(--border)',
+                        background: 'transparent',
+                        color: 'var(--text-tertiary)',
+                        cursor: 'pointer',
+                      }}
+                    >
+                      <Plus size={11} strokeWidth={2} />
+                    </button>
+                  </div>
+                </td>
                 {hasScores && (
                   <td style={{ padding: '12px 16px' }}>
                     {scores.length > 0 ? (
@@ -269,8 +333,14 @@ export default function TraceTable({ traces, onSelect, onCompare, totalElements 
       </table>
       {totalElements != null && (
         <div style={{
-          padding: '10px 16px', borderTop: '1px solid rgba(255,255,255,0.04)',
-          fontSize: 11, color: 'var(--text-tertiary)',
+          position: 'sticky',
+          bottom: 0,
+          zIndex: 1,
+          padding: '10px 16px',
+          borderTop: '1px solid rgba(255,255,255,0.04)',
+          background: 'var(--surface)',
+          fontSize: 11,
+          color: 'var(--text-tertiary)',
         }}>
           Showing {traces.length} of {totalElements} traces
         </div>

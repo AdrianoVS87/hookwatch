@@ -5,10 +5,11 @@ export async function fetchAnalytics(
   agentId: string,
   from: string,
   to: string,
-  granularity: string = 'day'
+  granularity: string = 'day',
+  model?: string | null,
 ): Promise<AnalyticsData> {
-  const { data } = await client.get('/analytics', {
-    params: { agentId, from, to, granularity }
-  })
+  const params: Record<string, string> = { agentId, from, to, granularity }
+  if (model) params.model = model
+  const { data } = await client.get('/analytics', { params })
   return data
 }

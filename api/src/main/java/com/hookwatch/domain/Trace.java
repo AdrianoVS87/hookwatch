@@ -46,6 +46,11 @@ public class Trace {
     @JdbcTypeCode(SqlTypes.JSON)
     private Map<String, Object> metadata;
 
+    @JdbcTypeCode(SqlTypes.ARRAY)
+    @Column(columnDefinition = "text[]")
+    @Builder.Default
+    private String[] tags = new String[0];
+
     @OneToMany(mappedBy = "traceId", cascade = CascadeType.ALL, orphanRemoval = true)
     @OrderBy("sortOrder ASC")
     @Builder.Default
