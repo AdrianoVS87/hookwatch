@@ -12,7 +12,7 @@
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-336791?logo=postgresql&logoColor=white)](https://www.postgresql.org)
 [![License](https://img.shields.io/badge/License-MIT-lightgrey)](LICENSE)
 
-**[Live Demo](https://hookwatch-one.vercel.app)** · **[API Docs](docs/API.md)** · **[Swagger UI](http://localhost:8080/swagger-ui/index.html)**
+**[Live Demo](https://hookwatch-one.vercel.app)** · **[API Reference](docs/API.md)**
 
 ---
 
@@ -181,36 +181,23 @@ Frontend: 3 Playwright e2e tests (dashboard, compliance, fingerprints).
 
 ## API Overview
 
-30+ endpoints across 12 controllers. Full reference: [`docs/API.md`](docs/API.md)
+30+ endpoints across 12 controllers. Full reference with curl examples: [`docs/API.md`](docs/API.md)
 
-**Core resources:**
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `POST` | `/api/v1/traces` | Submit trace with nested spans |
+| `GET` | `/api/v1/traces?agentId=&tag=` | List traces (paginated, filterable by tag) |
+| `GET` | `/api/v1/traces/{id}` | Get trace with all spans |
+| `GET` | `/api/v1/traces/{id}/stream` | SSE real-time span updates |
+| `GET` | `/api/v1/traces/compare` | Side-by-side trace diff |
+| `GET` | `/api/v1/analytics` | Cost analytics, learning velocity, compliance |
+| `GET` | `/api/v1/agents/{id}/metrics` | Agent metrics (incl. p95 latency) |
+| `POST` | `/api/v1/traces/{id}/scores` | Score a trace (numeric/categorical/boolean) |
+| `GET` | `/api/v1/fingerprints` | Failure pattern trends |
+| `GET` | `/api/v1/traces/{id}/otel` | Export as OTLP JSON |
+| `POST` | `/api/v1/ingest/otel` | Ingest OTLP trace |
 
-```
-POST   /api/v1/tenants                      # Create tenant (returns API key)
-POST   /api/v1/agents                       # Register agent
-POST   /api/v1/traces                       # Submit trace with spans
-GET    /api/v1/traces?agentId=&tag=          # List traces (paginated)
-GET    /api/v1/traces/{id}                   # Get trace with spans
-GET    /api/v1/traces/{id}/stream            # SSE — real-time span updates
-GET    /api/v1/traces/compare?traceId1=&traceId2=  # Side-by-side diff
-```
-
-**Analytics & scoring:**
-
-```
-GET    /api/v1/analytics?agentId=&from=&to=  # Full analytics dashboard data
-GET    /api/v1/agents/{id}/metrics           # Agent metrics (incl. p95 latency)
-POST   /api/v1/traces/{id}/scores            # Score a trace
-GET    /api/v1/traces/{id}/compliance        # OTel compliance report
-GET    /api/v1/fingerprints?agentId=          # Failure pattern trends
-```
-
-**OTel interop:**
-
-```
-GET    /api/v1/traces/{id}/otel              # Export as OTLP JSON
-POST   /api/v1/ingest/otel                   # Ingest OTLP trace
-```
+Interactive API docs available at `/swagger-ui/index.html` when running locally.
 
 ---
 
@@ -218,37 +205,17 @@ POST   /api/v1/ingest/otel                   # Ingest OTLP trace
 
 ```
 hookwatch/
-├── api/                              # Spring Boot 3.4 backend
-│   ├── src/main/java/com/hookwatch/
-│   │   ├── config/                   # DataSeeder, OpenApiConfig
-│   │   ├── controller/               # 12 REST controllers
-│   │   ├── domain/                   # 8 JPA entities
-│   │   ├── dto/                      # Request/response DTOs (Jakarta Validation)
-│   │   ├── filter/                   # ApiKeyFilter (BCrypt + tenant resolution)
-│   │   ├── repository/               # Spring Data JPA (JPQL + native queries)
-│   │   ├── security/                 # TenantContext (ThreadLocal)
-│   │   └── service/                  # Business logic (10 service classes)
-│   ├── src/main/resources/
-│   │   ├── application.yml           # Profiles: dev + docker (both validate via Flyway)
-│   │   └── db/migration/             # V1–V8 SQL migrations
-│   ├── src/test/java/                # 15 test classes (Testcontainers)
-│   ├── Dockerfile                    # Multi-stage: JDK build → JRE runtime
-│   └── pom.xml
-├── web/                              # React + Vite frontend
-│   └── src/
-│       ├── api/                      # Axios client + typed endpoint modules
-│       ├── components/               # TraceCanvas, SpanNode, SpanDetail, CommandPalette, etc.
-│       ├── pages/                    # Dashboard, TraceView, AnalyticsView, CompareView, Settings
-│       ├── stores/                   # 5 Zustand stores
-│       ├── hooks/                    # useTraceStream (SSE)
-│       └── types/                    # Full TypeScript domain types
-├── docs/
-│   ├── adr/                          # 5 Architecture Decision Records
-│   └── API.md                        # Complete API reference with curl examples
-├── .github/workflows/ci.yml          # CI: test + build + deploy
-├── docker-compose.yml                # PostgreSQL 16, Redis 7, API, Web
-├── Makefile                          # up / down / deploy / rollback / postman-export
-└── CONTRIBUTING.md                   # Dev setup, branching, commit conventions
+├── api/                        # Spring Boot 3.4 — 12 controllers, 10 services, 8 entities
+│   ├── src/main/java/          # controller/ domain/ dto/ filter/ repository/ security/ service/
+│   ├── src/main/resources/     # application.yml (dev + docker) · db/migration/ (V1–V8)
+│   ├── src/test/java/          # 15 test classes · Testcontainers PostgreSQL
+│   └── Dockerfile              # Multi-stage: JDK build → JRE runtime
+├── web/                        # React 19 + TypeScript 5 + Vite 8
+│   └── src/                    # api/ components/ pages/ stores/ hooks/ types/
+├── docs/adr/                   # 5 Architecture Decision Records
+├── .github/workflows/ci.yml    # Backend test + frontend build + deploy
+├── docker-compose.yml          # PostgreSQL 16, Redis 7, API, Web
+└── Makefile                    # up / down / deploy / rollback
 ```
 
 ---
@@ -292,6 +259,15 @@ scores               annotations          failure_fingerprints  webhooks
 │   MANUAL/LLM_JUDGE)                    └── first/last_seen_at
 └── created_at
 ```
+
+---
+
+## Live Demo
+
+| | URL |
+|-|-----|
+| **Frontend** | https://hookwatch-one.vercel.app |
+| **Backend API** | https://hookwatch.adrianovs.net |
 
 ---
 
