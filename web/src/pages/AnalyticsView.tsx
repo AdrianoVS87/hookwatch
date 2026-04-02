@@ -227,6 +227,11 @@ function buildMockData(from: string, to: string): AnalyticsData {
       memoryHitRate: 0.61,
       meanRecoveryMinutes: 18.4,
     },
+    learningVelocityByModel: [
+      { model: 'claude-sonnet-4-6', successRate: 0.92, avgLatencyMs: 980, avgCost: 0.024, memoryHitRate: 0.74 },
+      { model: 'openai-codex/gpt-5.3-codex', successRate: 0.89, avgLatencyMs: 840, avgCost: 0.018, memoryHitRate: 0.58 },
+      { model: 'claude-opus-4-6', successRate: 0.95, avgLatencyMs: 1450, avgCost: 0.052, memoryHitRate: 0.77 },
+    ],
     failureFingerprints: [
       { fingerprint: 'TOOL_TIMEOUT', count: 7, share: 0.39 },
       { fingerprint: 'RATE_LIMIT', count: 5, share: 0.28 },
@@ -538,6 +543,31 @@ export default function AnalyticsView() {
 
           {/* Memory lineage + fingerprint insights */}
           <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap' }}>
+            <ChartCard title="Learning Velocity by Model" style={{ flex: 1, minWidth: 320 }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
+                <thead>
+                  <tr style={{ borderBottom: '1px solid var(--border)' }}>
+                    <th style={{ padding: '6px 8px', textAlign: 'left', color: 'var(--text-tertiary)', fontSize: 11 }}>Model</th>
+                    <th style={{ padding: '6px 8px', textAlign: 'right', color: 'var(--text-tertiary)', fontSize: 11 }}>Success</th>
+                    <th style={{ padding: '6px 8px', textAlign: 'right', color: 'var(--text-tertiary)', fontSize: 11 }}>Latency</th>
+                    <th style={{ padding: '6px 8px', textAlign: 'right', color: 'var(--text-tertiary)', fontSize: 11 }}>Cost</th>
+                    <th style={{ padding: '6px 8px', textAlign: 'right', color: 'var(--text-tertiary)', fontSize: 11 }}>Memory Hit</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {data.learningVelocityByModel.map((m) => (
+                    <tr key={m.model} style={{ borderBottom: '1px solid var(--border)' }}>
+                      <td style={{ padding: '7px 8px' }}>{m.model}</td>
+                      <td style={{ padding: '7px 8px', textAlign: 'right' }}>{(m.successRate * 100).toFixed(0)}%</td>
+                      <td style={{ padding: '7px 8px', textAlign: 'right' }}>{Math.round(m.avgLatencyMs)}ms</td>
+                      <td style={{ padding: '7px 8px', textAlign: 'right' }}>${m.avgCost.toFixed(3)}</td>
+                      <td style={{ padding: '7px 8px', textAlign: 'right' }}>{(m.memoryHitRate * 100).toFixed(0)}%</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </ChartCard>
+
             <ChartCard title="Memory Lineage (retrieval-influenced traces)" style={{ flex: 1, minWidth: 320 }}>
               <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
                 <thead>

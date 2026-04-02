@@ -18,6 +18,8 @@ public record AnalyticsDto(
         List<MemoryLineage> memoryLineage,
         @Schema(description = "Learning velocity KPIs")
         LearningVelocity learningVelocity,
+        @Schema(description = "Learning velocity split by model")
+        List<LearningVelocityByModel> learningVelocityByModel,
         @Schema(description = "Top failure fingerprints")
         List<FailureFingerprint> failureFingerprints,
         @Schema(description = "OpenTelemetry/GenAI telemetry compliance summary")
@@ -88,6 +90,15 @@ public record AnalyticsDto(
             double repeatFailureRate,
             double memoryHitRate,
             double meanRecoveryMinutes
+    ) {}
+
+    @Schema(description = "Per-model learning velocity")
+    public record LearningVelocityByModel(
+            String model,
+            double successRate,
+            double avgLatencyMs,
+            double avgCost,
+            double memoryHitRate
     ) {}
 
     @Schema(description = "Failure fingerprint aggregate")

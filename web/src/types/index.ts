@@ -115,6 +115,7 @@ export interface AnalyticsData {
   costTrend: CostTrend
   memoryLineage: MemoryLineage[]
   learningVelocity: LearningVelocity
+  learningVelocityByModel: LearningVelocityByModel[]
   failureFingerprints: FailureFingerprint[]
   otelCompliance: OTelCompliance
   evalLoopSummary: EvalLoopSummary
@@ -160,6 +161,14 @@ export interface LearningVelocity {
   repeatFailureRate: number
   memoryHitRate: number
   meanRecoveryMinutes: number
+}
+
+export interface LearningVelocityByModel {
+  model: string
+  successRate: number
+  avgLatencyMs: number
+  avgCost: number
+  memoryHitRate: number
 }
 
 export interface FailureFingerprint {

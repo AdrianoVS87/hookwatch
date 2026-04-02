@@ -29,6 +29,7 @@ public class AnalyticsService {
         List<AnalyticsDto.MemoryLineage> memoryLineage = getMemoryLineage(agentId, from, to, model);
         List<AnalyticsDto.FailureFingerprint> failureFingerprints = getFailureFingerprints(agentId, from, to, model);
         AnalyticsDto.LearningVelocity learningVelocity = getLearningVelocity(agentId, from, to, model, failureFingerprints);
+        List<AnalyticsDto.LearningVelocityByModel> learningVelocityByModel = getLearningVelocityByModel(agentId, from, to, model);
         AnalyticsDto.OTelCompliance otelCompliance = getOtelCompliance(agentId, from, to, model);
         AnalyticsDto.EvalLoopSummary evalLoopSummary = getEvalLoopSummary(agentId, from, to, model);
 
@@ -39,6 +40,7 @@ public class AnalyticsService {
                 costTrend,
                 memoryLineage,
                 learningVelocity,
+                learningVelocityByModel,
                 failureFingerprints,
                 otelCompliance,
                 evalLoopSummary
@@ -247,6 +249,46 @@ public class AnalyticsService {
         for (Object[] row : rows) {
             int count = ((Number) row[1]).intValue();
             result.add(new AnalyticsDto.FailureFingerprint((String) row[0], count, (double) count / total));
+        }
+        return result;
+    }
+
+    private List<AnalyticsDto.LearningVelocityByModel> getLearningVelocityByModel(UUID agentId, LocalDate from, LocalDate to, String model) {
+        String modelClause = model != null ? "AND t.metadata->>'model' = :model" : "";
+        String sql = """
+                SELECT
+                    COALESCE(s.model, 'unknown') AS model,
+                    AVG(CASE WHEN t.status = 'COMPLETED' THEN 1.0 ELSE 0.0 END) AS success_rate,
+                    AVG(EXTRACT(EPOCH FROM (t.completed_at - t.started_at)) * 1000) AS avg_latency_ms,
+                    AVG(COALESCE(t.total_cost, 0)) AS avg_cost,
+                    AVG(CASE WHEN EXISTS (
+                        SELECT 1 FROM spans sx WHERE sx.trace_id = t.id AND sx.type = 'RETRIEVAL'
+                    ) THEN 1.0 ELSE 0.0 END) AS memory_hit_rate
+                FROM traces t
+                JOIN spans s ON s.trace_id = t.id
+                WHERE t.agent_id = :agentId
+                  AND t.started_at >= :from
+                  AND t.started_at < :to
+                  AND s.model IS NOT NULL
+                  """ + modelClause + """
+                GROUP BY s.model
+                ORDER BY avg_cost DESC
+                LIMIT 10
+                """;
+
+        Query q = em.createNativeQuery(sql);
+        bindCommon(q, agentId, from, to, model);
+        List<Object[]> rows = q.getResultList();
+
+        List<AnalyticsDto.LearningVelocityByModel> result = new ArrayList<>();
+        for (Object[] r : rows) {
+            result.add(new AnalyticsDto.LearningVelocityByModel(
+                    (String) r[0],
+                    r[1] == null ? 0.0 : ((Number) r[1]).doubleValue(),
+                    r[2] == null ? 0.0 : ((Number) r[2]).doubleValue(),
+                    r[3] == null ? 0.0 : ((Number) r[3]).doubleValue(),
+                    r[4] == null ? 0.0 : ((Number) r[4]).doubleValue()
+            ));
         }
         return result;
     }
