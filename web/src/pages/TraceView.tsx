@@ -5,7 +5,7 @@ import TraceCanvas from '../components/TraceCanvas'
 import SpanDetail from '../components/SpanDetail'
 import TraceSelector from '../components/TraceSelector'
 import type { Annotation, Span } from '../types'
-import { createAnnotation, fetchAnnotations } from '../api/traces'
+import { createAnnotation, fetchAnnotations, fetchMemoryLineage } from '../api/traces'
 
 const STATUS_COLOR: Record<string, string> = {
   COMPLETED: '#10B981', RUNNING: '#6366F1', FAILED: '#EF4444',
@@ -15,6 +15,7 @@ export default function TraceView() {
   const { selectedTrace, clearTrace, selectTrace, traces, rawTraces } = useTraceStore()
   const [activeSpan, setActiveSpan] = useState<Span | null>(null)
   const [annotations, setAnnotations] = useState<Annotation[]>([])
+  const [memoryLineage, setMemoryLineage] = useState<{ retrievalSpanNames: string[]; memoryReferences: string[]; retrievalSpanCount: number } | null>(null)
   const [annotationOpen, setAnnotationOpen] = useState(true)
   const [text, setText] = useState('')
   const [author, setAuthor] = useState('adriano')
@@ -26,11 +27,16 @@ export default function TraceView() {
   useEffect(() => {
     if (!selectedTrace) {
       setAnnotations([])
+      setMemoryLineage(null)
       return
     }
     fetchAnnotations(selectedTrace.id)
       .then(setAnnotations)
       .catch(() => setAnnotations([]))
+
+    fetchMemoryLineage(selectedTrace.id)
+      .then((v) => setMemoryLineage(v))
+      .catch(() => setMemoryLineage(null))
   }, [selectedTrace?.id])
 
   if (!selectedTrace) {
@@ -159,10 +165,16 @@ export default function TraceView() {
         <div style={{ color: 'var(--text-secondary)', marginBottom: 6, fontWeight: 600 }}>Memory Lineage</div>
         {(() => {
           const retrievalSpans = selectedTrace.spans.filter((s) => s.type === 'RETRIEVAL')
-          const memoryNodes = retrievalSpans.slice(0, 5).map((s) => s.name)
-          const metadataMemory = selectedTrace.metadata && typeof selectedTrace.metadata === 'object'
-            ? (selectedTrace.metadata['memoryLineage'] as unknown[] | undefined)
-            : undefined
+          const memoryNodes = (memoryLineage?.retrievalSpanNames?.length
+            ? memoryLineage.retrievalSpanNames
+            : retrievalSpans.slice(0, 5).map((s) => s.name)
+          ).filter(Boolean)
+
+          const metadataMemory = memoryLineage?.memoryReferences?.length
+            ? memoryLineage.memoryReferences
+            : selectedTrace.metadata && typeof selectedTrace.metadata === 'object'
+              ? (selectedTrace.metadata['memoryLineage'] as unknown[] | undefined)
+              : undefined
 
           if ((!metadataMemory || metadataMemory.length === 0) && memoryNodes.length === 0) {
             return <span style={{ color: 'var(--text-tertiary)' }}>No memory lineage signals captured for this trace.</span>

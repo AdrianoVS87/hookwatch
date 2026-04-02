@@ -42,6 +42,14 @@ export interface Annotation {
   createdAt: string
 }
 
+export interface TraceMemoryLineage {
+  traceId: string
+  retrievalSpanCount: number
+  retrievalSpanNames: string[]
+  memoryReferences: string[]
+  inferredOutcome: string
+}
+
 export interface Agent {
   id: string
   tenantId: string

@@ -5,6 +5,7 @@ import com.hookwatch.domain.Span;
 import com.hookwatch.domain.Trace;
 import com.hookwatch.dto.AnnotationCreateRequest;
 import com.hookwatch.dto.AnnotationDto;
+import com.hookwatch.dto.MemoryLineageDto;
 import com.hookwatch.dto.SpanDto;
 import com.hookwatch.dto.TraceDto;
 import com.hookwatch.repository.AnnotationRepository;
@@ -163,6 +164,32 @@ public class TraceService {
                 .stream()
                 .map(AnnotationDto::fromEntity)
                 .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public MemoryLineageDto getMemoryLineage(UUID traceId) {
+        Trace trace = resolveTraceForTenant(traceId, TenantContext.get());
+
+        List<Span> retrievalSpans = trace.getSpans().stream()
+                .filter(s -> s.getType() == Span.Type.RETRIEVAL)
+                .toList();
+
+        List<String> retrievalNames = retrievalSpans.stream()
+                .map(Span::getName)
+                .filter(Objects::nonNull)
+                .limit(20)
+                .toList();
+
+        List<String> memoryRefs = new ArrayList<>();
+        if (trace.getMetadata() != null) {
+            Object lineage = trace.getMetadata().get("memoryLineage");
+            if (lineage instanceof Collection<?> c) {
+                memoryRefs = c.stream().map(String::valueOf).limit(20).toList();
+            }
+        }
+
+        String outcome = trace.getStatus().name();
+        return new MemoryLineageDto(trace.getId().toString(), retrievalSpans.size(), retrievalNames, memoryRefs, outcome);
     }
 
     private Trace resolveTraceForTenant(UUID traceId, UUID tenantId) {

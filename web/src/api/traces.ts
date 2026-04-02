@@ -1,5 +1,5 @@
 import { client } from './client'
-import type { Annotation, PageResponse, Score, Trace } from '../types'
+import type { Annotation, PageResponse, Score, Trace, TraceMemoryLineage } from '../types'
 
 export const fetchTraces = (agentId: string, page = 0, size = 20, tag?: string): Promise<PageResponse<Trace>> =>
   client.get<PageResponse<Trace>>('/traces', { params: { agentId, page, size, tag } }).then((r) => r.data)
@@ -24,3 +24,6 @@ export const createAnnotation = (traceId: string, text: string, author: string):
 
 export const fetchAnnotations = (traceId: string): Promise<Annotation[]> =>
   client.get<Annotation[]>(`/traces/${traceId}/annotations`).then((r) => r.data)
+
+export const fetchMemoryLineage = (traceId: string): Promise<TraceMemoryLineage> =>
+  client.get<TraceMemoryLineage>(`/traces/${traceId}/memory-lineage`).then((r) => r.data)

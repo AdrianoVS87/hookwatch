@@ -4,6 +4,7 @@ import com.hookwatch.domain.Trace;
 import com.hookwatch.dto.AnnotationCreateRequest;
 import com.hookwatch.dto.AnnotationDto;
 import com.hookwatch.dto.ApiErrorDto;
+import com.hookwatch.dto.MemoryLineageDto;
 import com.hookwatch.dto.TraceComparisonDto;
 import com.hookwatch.dto.TraceDto;
 import com.hookwatch.dto.TraceTagsRequest;
@@ -124,6 +125,12 @@ public class TraceController {
     @Operation(summary = "List annotations for trace")
     public List<AnnotationDto> listAnnotations(@PathVariable UUID id) {
         return traceService.listAnnotations(id);
+    }
+
+    @GetMapping("/{id}/memory-lineage")
+    @Operation(summary = "Get memory lineage for trace")
+    public MemoryLineageDto getMemoryLineage(@PathVariable UUID id) {
+        return traceService.getMemoryLineage(id);
     }
 
     @GetMapping("/compare")
