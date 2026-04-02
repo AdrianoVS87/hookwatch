@@ -25,3 +25,11 @@ replay_pid*
 api/target/
 web/test-results/
 test-results/
+
+# AI/Internal memory files - NEVER commit
+CLAUDE.md
+REVIEW.md
+improve/
+docs/ADRIANO_EXECUTION_MEGA_PROMPT.md
+*.prompt.md
+.ai-memory/
