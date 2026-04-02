@@ -13,7 +13,17 @@ public record AnalyticsDto(
         @Schema(description = "Most expensive traces")
         List<TopTrace> topExpensiveTraces,
         @Schema(description = "Cost trend and projection")
-        CostTrend costTrend
+        CostTrend costTrend,
+        @Schema(description = "Top memory-influenced traces")
+        List<MemoryLineage> memoryLineage,
+        @Schema(description = "Learning velocity KPIs")
+        LearningVelocity learningVelocity,
+        @Schema(description = "Top failure fingerprints")
+        List<FailureFingerprint> failureFingerprints,
+        @Schema(description = "OpenTelemetry/GenAI telemetry compliance summary")
+        OTelCompliance otelCompliance,
+        @Schema(description = "Trace->eval loop summary")
+        EvalLoopSummary evalLoopSummary
 ) {
 
     @Schema(description = "Daily usage aggregate")
@@ -62,5 +72,43 @@ public record AnalyticsDto(
             double percentChangeVsPreviousPeriod,
             @Schema(description = "Projected monthly cost in USD", example = "54.7")
             double projectedMonthlyCost
+    ) {}
+
+    @Schema(description = "Memory lineage KPI row")
+    public record MemoryLineage(
+            String traceId,
+            int retrievalSpanCount,
+            String status,
+            String startedAt
+    ) {}
+
+    @Schema(description = "Learning velocity KPIs")
+    public record LearningVelocity(
+            double costPerSuccessfulTrace,
+            double repeatFailureRate,
+            double memoryHitRate,
+            double meanRecoveryMinutes
+    ) {}
+
+    @Schema(description = "Failure fingerprint aggregate")
+    public record FailureFingerprint(
+            String fingerprint,
+            int count,
+            double share
+    ) {}
+
+    @Schema(description = "GenAI telemetry compliance")
+    public record OTelCompliance(
+            int totalTraces,
+            int compliantTraces,
+            double complianceRate
+    ) {}
+
+    @Schema(description = "Trace->Eval loop summary")
+    public record EvalLoopSummary(
+            int totalTraces,
+            int evaluatedTraces,
+            double evaluationCoverage,
+            Double avgAutoQualityScore
     ) {}
 }

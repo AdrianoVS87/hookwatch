@@ -1,6 +1,7 @@
 package com.hookwatch.controller;
 
 import com.hookwatch.dto.ApiErrorDto;
+import com.hookwatch.dto.AutoEvalResponseDto;
 import com.hookwatch.dto.ScoreDto;
 import com.hookwatch.dto.ScoreSummaryDto;
 import com.hookwatch.service.ScoreService;
@@ -55,6 +56,18 @@ public class ScoreController {
     })
     public List<ScoreDto> listByTrace(@PathVariable UUID traceId) {
         return scoreService.listByTraceId(traceId);
+    }
+
+    @PostMapping("/api/v1/agents/{agentId}/scores/auto-evaluate")
+    @Operation(
+            summary = "Auto-evaluate recent traces",
+            description = "Generates heuristic auto_quality_v1 scores for recent traces that are not yet evaluated."
+    )
+    public AutoEvalResponseDto autoEvaluate(
+            @PathVariable UUID agentId,
+            @RequestParam(defaultValue = "50") int limit
+    ) {
+        return scoreService.autoEvaluateRecentTraces(agentId, limit);
     }
 
     @GetMapping("/api/v1/agents/{agentId}/scores/summary")

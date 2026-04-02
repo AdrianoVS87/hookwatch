@@ -14,6 +14,8 @@ public interface ScoreRepository extends JpaRepository<Score, UUID> {
 
     List<Score> findByTraceId(UUID traceId);
 
+    boolean existsByTraceIdAndName(UUID traceId, String name);
+
     @Query("""
         SELECT s FROM Score s
         JOIN s.trace t

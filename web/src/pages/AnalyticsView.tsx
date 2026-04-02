@@ -8,6 +8,7 @@ import { TrendingUp, TrendingDown, DollarSign, Zap, Hash, BarChart3 } from 'luci
 import DateRangePicker, { presetRange, toDateStr } from '../components/DateRangePicker'
 import type { DateRange } from '../components/DateRangePicker'
 import { fetchAnalytics } from '../api/analytics'
+import { autoEvaluateAgent } from '../api/scores'
 import type { AnalyticsData, DailyUsage } from '../types'
 import { useAgentStore } from '../stores/useAgentStore'
 import { useTraceStore } from '../stores/useTraceStore'
@@ -214,6 +215,31 @@ function buildMockData(from: string, to: string): AnalyticsData {
     byModel,
     topExpensiveTraces,
     costTrend: { percentChangeVsPreviousPeriod: 12.4, projectedMonthlyCost: 18.5 },
+    memoryLineage: topExpensiveTraces.slice(0, 5).map((t, i) => ({
+      traceId: t.traceId,
+      retrievalSpanCount: 4 - Math.min(i, 3),
+      status: i % 2 === 0 ? 'COMPLETED' : 'FAILED',
+      startedAt: t.startedAt,
+    })),
+    learningVelocity: {
+      costPerSuccessfulTrace: 0.018,
+      repeatFailureRate: 0.34,
+      memoryHitRate: 0.61,
+      meanRecoveryMinutes: 18.4,
+    },
+    failureFingerprints: [
+      { fingerprint: 'TOOL_TIMEOUT', count: 7, share: 0.39 },
+      { fingerprint: 'RATE_LIMIT', count: 5, share: 0.28 },
+      { fingerprint: 'CONTEXT_OVERFLOW', count: 3, share: 0.17 },
+      { fingerprint: 'FAILED_UNKNOWN', count: 3, share: 0.17 },
+    ],
+    otelCompliance: { totalTraces: 42, compliantTraces: 35, complianceRate: 35 / 42 },
+    evalLoopSummary: {
+      totalTraces: 42,
+      evaluatedTraces: 18,
+      evaluationCoverage: 18 / 42,
+      avgAutoQualityScore: 0.82,
+    },
   }
 }
 
@@ -233,6 +259,7 @@ export default function AnalyticsView() {
   const [data, setData] = useState<AnalyticsData | null>(null)
   const [loading, setLoading] = useState(false)
   const [usingMock, setUsingMock] = useState(false)
+  const [autoEvalRunning, setAutoEvalRunning] = useState(false)
 
   const load = useCallback(async (agentId: string, r: DateRange, model?: string | null) => {
     setLoading(true)
@@ -259,6 +286,18 @@ export default function AnalyticsView() {
 
   const handleRangeChange = (r: DateRange) => {
     setRange(r)
+  }
+
+  const runAutoEval = async () => {
+    const targetAgent = selectedAgentId ?? agents[0]?.id
+    if (!targetAgent) return
+    setAutoEvalRunning(true)
+    try {
+      await autoEvaluateAgent(targetAgent, 50)
+      await load(targetAgent, range, selectedModel)
+    } finally {
+      setAutoEvalRunning(false)
+    }
   }
 
   // ── derived metrics ──────────────────────────────────────────────────────────
@@ -297,7 +336,26 @@ export default function AnalyticsView() {
             </span>
           )}
         </div>
-        <DateRangePicker value={range} onChange={handleRangeChange} />
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <button
+            onClick={() => void runAutoEval()}
+            disabled={autoEvalRunning}
+            style={{
+              border: '1px solid rgba(34,211,238,0.35)',
+              background: 'rgba(34,211,238,0.12)',
+              color: '#22d3ee',
+              borderRadius: 8,
+              fontSize: 12,
+              fontWeight: 600,
+              padding: '8px 12px',
+              cursor: 'pointer',
+              opacity: autoEvalRunning ? 0.7 : 1,
+            }}
+          >
+            {autoEvalRunning ? 'Running eval…' : 'Run Auto Eval Loop'}
+          </button>
+          <DateRangePicker value={range} onChange={handleRangeChange} />
+        </div>
       </div>
 
       {loading && (
@@ -331,6 +389,34 @@ export default function AnalyticsView() {
               label="Avg Cost / Trace"
               value={fmtCost(avgCostPerTrace)}
               icon={<Zap size={14} />}
+            />
+          </div>
+
+          {/* Theta-style operational KPIs */}
+          <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap' }}>
+            <SummaryCard
+              label="Eval Coverage"
+              value={`${(data.evalLoopSummary.evaluationCoverage * 100).toFixed(0)}%`}
+              sub={`${data.evalLoopSummary.evaluatedTraces}/${data.evalLoopSummary.totalTraces} traces scored`}
+              icon={<BarChart3 size={14} />}
+            />
+            <SummaryCard
+              label="OTel GenAI Compliance"
+              value={`${(data.otelCompliance.complianceRate * 100).toFixed(0)}%`}
+              sub={`${data.otelCompliance.compliantTraces}/${data.otelCompliance.totalTraces} traces compliant`}
+              icon={<Zap size={14} />}
+            />
+            <SummaryCard
+              label="Memory Hit Rate"
+              value={`${(data.learningVelocity.memoryHitRate * 100).toFixed(0)}%`}
+              sub={`Recovery ${data.learningVelocity.meanRecoveryMinutes.toFixed(1)} min`}
+              icon={<TrendingUp size={14} />}
+            />
+            <SummaryCard
+              label="Repeat Failure Rate"
+              value={`${(data.learningVelocity.repeatFailureRate * 100).toFixed(0)}%`}
+              sub="Fingerprint recurrence"
+              icon={<TrendingDown size={14} />}
             />
           </div>
 
@@ -447,6 +533,57 @@ export default function AnalyticsView() {
                   <Bar dataKey="errorRate" name="Error" stackId="a" fill="#EF4444" radius={[3, 3, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
+            </ChartCard>
+          </div>
+
+          {/* Memory lineage + fingerprint insights */}
+          <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap' }}>
+            <ChartCard title="Memory Lineage (retrieval-influenced traces)" style={{ flex: 1, minWidth: 320 }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
+                <thead>
+                  <tr style={{ borderBottom: '1px solid var(--border)' }}>
+                    <th style={{ padding: '6px 8px', textAlign: 'left', color: 'var(--text-tertiary)', fontSize: 11 }}>Trace</th>
+                    <th style={{ padding: '6px 8px', textAlign: 'right', color: 'var(--text-tertiary)', fontSize: 11 }}>Retrieval Spans</th>
+                    <th style={{ padding: '6px 8px', textAlign: 'right', color: 'var(--text-tertiary)', fontSize: 11 }}>Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {data.memoryLineage.map((m) => (
+                    <tr key={m.traceId} style={{ borderBottom: '1px solid var(--border)' }}>
+                      <td style={{ padding: '7px 8px', fontFamily: 'monospace', color: 'var(--accent-hover)' }}>{m.traceId.slice(0, 8)}…{m.traceId.slice(-6)}</td>
+                      <td style={{ padding: '7px 8px', textAlign: 'right' }}>{m.retrievalSpanCount}</td>
+                      <td style={{ padding: '7px 8px', textAlign: 'right' }}>{m.status}</td>
+                    </tr>
+                  ))}
+                  {data.memoryLineage.length === 0 && (
+                    <tr><td colSpan={3} style={{ padding: '10px 8px', color: 'var(--text-tertiary)' }}>No retrieval-heavy traces in selected window.</td></tr>
+                  )}
+                </tbody>
+              </table>
+            </ChartCard>
+
+            <ChartCard title="Failure Fingerprints" style={{ flex: 1, minWidth: 320 }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
+                <thead>
+                  <tr style={{ borderBottom: '1px solid var(--border)' }}>
+                    <th style={{ padding: '6px 8px', textAlign: 'left', color: 'var(--text-tertiary)', fontSize: 11 }}>Fingerprint</th>
+                    <th style={{ padding: '6px 8px', textAlign: 'right', color: 'var(--text-tertiary)', fontSize: 11 }}>Count</th>
+                    <th style={{ padding: '6px 8px', textAlign: 'right', color: 'var(--text-tertiary)', fontSize: 11 }}>Share</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {data.failureFingerprints.map((f) => (
+                    <tr key={f.fingerprint} style={{ borderBottom: '1px solid var(--border)' }}>
+                      <td style={{ padding: '7px 8px' }}>{f.fingerprint}</td>
+                      <td style={{ padding: '7px 8px', textAlign: 'right' }}>{f.count}</td>
+                      <td style={{ padding: '7px 8px', textAlign: 'right' }}>{(f.share * 100).toFixed(0)}%</td>
+                    </tr>
+                  ))}
+                  {data.failureFingerprints.length === 0 && (
+                    <tr><td colSpan={3} style={{ padding: '10px 8px', color: 'var(--text-tertiary)' }}>No failed traces in selected window.</td></tr>
+                  )}
+                </tbody>
+              </table>
             </ChartCard>
           </div>
 

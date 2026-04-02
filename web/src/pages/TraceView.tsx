@@ -150,6 +150,41 @@ export default function TraceView() {
         </div>
       </header>
 
+      <section style={{
+        borderBottom: '1px solid var(--border)',
+        background: 'var(--surface)',
+        padding: '10px 16px',
+        fontSize: 12,
+      }}>
+        <div style={{ color: 'var(--text-secondary)', marginBottom: 6, fontWeight: 600 }}>Memory Lineage</div>
+        {(() => {
+          const retrievalSpans = selectedTrace.spans.filter((s) => s.type === 'RETRIEVAL')
+          const memoryNodes = retrievalSpans.slice(0, 5).map((s) => s.name)
+          const metadataMemory = selectedTrace.metadata && typeof selectedTrace.metadata === 'object'
+            ? (selectedTrace.metadata['memoryLineage'] as unknown[] | undefined)
+            : undefined
+
+          if ((!metadataMemory || metadataMemory.length === 0) && memoryNodes.length === 0) {
+            return <span style={{ color: 'var(--text-tertiary)' }}>No memory lineage signals captured for this trace.</span>
+          }
+
+          return (
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+              {memoryNodes.map((n) => (
+                <span key={n} style={{ border: '1px solid rgba(16,185,129,0.35)', background: 'rgba(16,185,129,0.1)', color: '#10B981', borderRadius: 999, padding: '3px 10px' }}>
+                  retrieval:{n}
+                </span>
+              ))}
+              {(metadataMemory ?? []).slice(0, 5).map((m, idx) => (
+                <span key={`m-${idx}`} style={{ border: '1px solid rgba(99,102,241,0.35)', background: 'rgba(99,102,241,0.1)', color: 'var(--accent-hover)', borderRadius: 999, padding: '3px 10px' }}>
+                  memory:{String(m)}
+                </span>
+              ))}
+            </div>
+          )
+        })()}
+      </section>
+
       <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
         <div style={{ flex: 1 }}>
           {selectedTrace.spans.length === 0 ? (

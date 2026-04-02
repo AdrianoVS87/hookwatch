@@ -196,6 +196,29 @@ class AnalyticsIntegrationTest extends BaseIntegrationTest {
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
     }
 
+    @Test
+    void analytics_shouldExposeThetaReadinessSignals() {
+        LocalDate today = LocalDate.now();
+        createTraceWithModelSpanOnDate(agentId, today, "gpt-4", 500, 0.01);
+        createTraceOnDate(agentId, today, 300, 0.004, "FAILED");
+
+        Map<String, Object> analytics = fetchAnalytics(agentId, today, today);
+
+        assertThat(analytics).containsKeys(
+                "memoryLineage",
+                "learningVelocity",
+                "failureFingerprints",
+                "otelCompliance",
+                "evalLoopSummary"
+        );
+
+        Map<String, Object> learning = (Map<String, Object>) analytics.get("learningVelocity");
+        assertThat(learning).containsKeys("costPerSuccessfulTrace", "repeatFailureRate", "memoryHitRate", "meanRecoveryMinutes");
+
+        Map<String, Object> otel = (Map<String, Object>) analytics.get("otelCompliance");
+        assertThat(otel).containsKeys("totalTraces", "compliantTraces", "complianceRate");
+    }
+
     // ── Helpers ───────────────────────────────────────────────────────────────
 
     private Map<String, Object> fetchAnalytics(UUID agentId, LocalDate from, LocalDate to) {

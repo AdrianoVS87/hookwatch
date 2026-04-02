@@ -105,6 +105,11 @@ export interface AnalyticsData {
   byModel: ModelUsage[]
   topExpensiveTraces: TopTrace[]
   costTrend: CostTrend
+  memoryLineage: MemoryLineage[]
+  learningVelocity: LearningVelocity
+  failureFingerprints: FailureFingerprint[]
+  otelCompliance: OTelCompliance
+  evalLoopSummary: EvalLoopSummary
 }
 
 export interface DailyUsage {
@@ -133,4 +138,37 @@ export interface TopTrace {
 export interface CostTrend {
   percentChangeVsPreviousPeriod: number
   projectedMonthlyCost: number
+}
+
+export interface MemoryLineage {
+  traceId: string
+  retrievalSpanCount: number
+  status: string
+  startedAt: string
+}
+
+export interface LearningVelocity {
+  costPerSuccessfulTrace: number
+  repeatFailureRate: number
+  memoryHitRate: number
+  meanRecoveryMinutes: number
+}
+
+export interface FailureFingerprint {
+  fingerprint: string
+  count: number
+  share: number
+}
+
+export interface OTelCompliance {
+  totalTraces: number
+  compliantTraces: number
+  complianceRate: number
+}
+
+export interface EvalLoopSummary {
+  totalTraces: number
+  evaluatedTraces: number
+  evaluationCoverage: number
+  avgAutoQualityScore: number | null
 }
