@@ -117,6 +117,7 @@ export interface AnalyticsData {
   learningVelocity: LearningVelocity
   learningVelocityByModel: LearningVelocityByModel[]
   failureFingerprints: FailureFingerprint[]
+  failureFingerprintTrends: FailureFingerprintTrend[]
   otelCompliance: OTelCompliance
   evalLoopSummary: EvalLoopSummary
 }
@@ -175,6 +176,12 @@ export interface FailureFingerprint {
   fingerprint: string
   count: number
   share: number
+}
+
+export interface FailureFingerprintTrend {
+  date: string
+  fingerprint: string
+  count: number
 }
 
 export interface OTelCompliance {

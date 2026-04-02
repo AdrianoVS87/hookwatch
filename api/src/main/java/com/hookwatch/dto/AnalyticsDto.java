@@ -22,6 +22,8 @@ public record AnalyticsDto(
         List<LearningVelocityByModel> learningVelocityByModel,
         @Schema(description = "Top failure fingerprints")
         List<FailureFingerprint> failureFingerprints,
+        @Schema(description = "Failure fingerprint daily trend")
+        List<FailureFingerprintTrend> failureFingerprintTrends,
         @Schema(description = "OpenTelemetry/GenAI telemetry compliance summary")
         OTelCompliance otelCompliance,
         @Schema(description = "Trace->eval loop summary")
@@ -121,5 +123,12 @@ public record AnalyticsDto(
             int evaluatedTraces,
             double evaluationCoverage,
             Double avgAutoQualityScore
+    ) {}
+
+    @Schema(description = "Daily failure fingerprint trend point")
+    public record FailureFingerprintTrend(
+            @Schema(description = "Date (ISO-8601)", example = "2026-03-28") String date,
+            @Schema(description = "Fingerprint category") String fingerprint,
+            @Schema(description = "Occurrence count") int count
     ) {}
 }

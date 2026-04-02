@@ -238,6 +238,14 @@ function buildMockData(from: string, to: string): AnalyticsData {
       { fingerprint: 'CONTEXT_OVERFLOW', count: 3, share: 0.17 },
       { fingerprint: 'FAILED_UNKNOWN', count: 3, share: 0.17 },
     ],
+    failureFingerprintTrends: [
+      { date: '2026-03-26', fingerprint: 'TOOL_TIMEOUT', count: 3 },
+      { date: '2026-03-26', fingerprint: 'RATE_LIMIT', count: 2 },
+      { date: '2026-03-27', fingerprint: 'TOOL_TIMEOUT', count: 2 },
+      { date: '2026-03-27', fingerprint: 'CONTEXT_OVERFLOW', count: 1 },
+      { date: '2026-03-28', fingerprint: 'RATE_LIMIT', count: 3 },
+      { date: '2026-03-28', fingerprint: 'FAILED_UNKNOWN', count: 2 },
+    ],
     otelCompliance: { totalTraces: 42, compliantTraces: 35, complianceRate: 35 / 42 },
     evalLoopSummary: {
       totalTraces: 42,
@@ -616,6 +624,31 @@ export default function AnalyticsView() {
               </table>
             </ChartCard>
           </div>
+
+          {/* Failure fingerprint trend */}
+          <ChartCard title="Failure Fingerprint Trend (Daily)">
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
+              <thead>
+                <tr style={{ borderBottom: '1px solid var(--border)' }}>
+                  <th style={{ padding: '6px 8px', textAlign: 'left', color: 'var(--text-tertiary)', fontSize: 11 }}>Date</th>
+                  <th style={{ padding: '6px 8px', textAlign: 'left', color: 'var(--text-tertiary)', fontSize: 11 }}>Fingerprint</th>
+                  <th style={{ padding: '6px 8px', textAlign: 'right', color: 'var(--text-tertiary)', fontSize: 11 }}>Count</th>
+                </tr>
+              </thead>
+              <tbody>
+                {(data.failureFingerprintTrends ?? []).map((t, idx) => (
+                  <tr key={`${t.date}-${t.fingerprint}-${idx}`} style={{ borderBottom: '1px solid var(--border)' }}>
+                    <td style={{ padding: '7px 8px' }}>{t.date}</td>
+                    <td style={{ padding: '7px 8px' }}>{t.fingerprint}</td>
+                    <td style={{ padding: '7px 8px', textAlign: 'right' }}>{t.count}</td>
+                  </tr>
+                ))}
+                {(!data.failureFingerprintTrends || data.failureFingerprintTrends.length === 0) && (
+                  <tr><td colSpan={3} style={{ padding: '10px 8px', color: 'var(--text-tertiary)' }}>No failed-trace trend data.</td></tr>
+                )}
+              </tbody>
+            </table>
+          </ChartCard>
 
           {/* Top expensive traces table */}
           <ChartCard title="Top 10 Most Expensive Traces">

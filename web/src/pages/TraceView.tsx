@@ -1,11 +1,12 @@
 import { useEffect, useState, type CSSProperties } from 'react'
-import { ArrowLeft, ChevronDown, ChevronUp, GitBranch, StickyNote } from 'lucide-react'
+import { ArrowLeft, ChevronDown, ChevronUp, GitBranch, StickyNote, ShieldCheck } from 'lucide-react'
 import { useTraceStore } from '../stores/useTraceStore'
 import TraceCanvas from '../components/TraceCanvas'
 import SpanDetail from '../components/SpanDetail'
 import TraceSelector from '../components/TraceSelector'
 import type { Annotation, Span } from '../types'
 import { createAnnotation, fetchAnnotations, fetchMemoryLineage } from '../api/traces'
+import { fetchTraceCompliance, type TraceComplianceReport } from '../api/compliance'
 
 const STATUS_COLOR: Record<string, string> = {
   COMPLETED: '#10B981', RUNNING: '#6366F1', FAILED: '#EF4444',
@@ -16,6 +17,8 @@ export default function TraceView() {
   const [activeSpan, setActiveSpan] = useState<Span | null>(null)
   const [annotations, setAnnotations] = useState<Annotation[]>([])
   const [memoryLineage, setMemoryLineage] = useState<{ retrievalSpanNames: string[]; memoryReferences: string[]; retrievalSpanCount: number } | null>(null)
+  const [compliance, setCompliance] = useState<TraceComplianceReport | null>(null)
+  const [complianceOpen, setComplianceOpen] = useState(false)
   const [annotationOpen, setAnnotationOpen] = useState(true)
   const [text, setText] = useState('')
   const [author, setAuthor] = useState('adriano')
@@ -37,6 +40,10 @@ export default function TraceView() {
     fetchMemoryLineage(selectedTrace.id)
       .then((v) => setMemoryLineage(v))
       .catch(() => setMemoryLineage(null))
+
+    fetchTraceCompliance(selectedTrace.id)
+      .then(setCompliance)
+      .catch(() => setCompliance(null))
   }, [selectedTrace?.id])
 
   if (!selectedTrace) {
@@ -153,6 +160,25 @@ export default function TraceView() {
             <Stat label="Cost" value={`$${selectedTrace.totalCost.toFixed(4)}`} />
           )}
           <Stat label="Spans" value={String(selectedTrace.spans.length)} />
+          {compliance && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              <ShieldCheck
+                size={14}
+                strokeWidth={1.5}
+                style={{
+                  color: compliance.failed === 0
+                    ? '#10B981'
+                    : compliance.failed <= 2
+                      ? '#F59E0B'
+                      : '#EF4444',
+                }}
+              />
+              <Stat
+                label="Compliance"
+                value={`${compliance.passed}/${compliance.totalChecks}`}
+              />
+            </div>
+          )}
         </div>
       </header>
 
@@ -196,6 +222,72 @@ export default function TraceView() {
           )
         })()}
       </section>
+
+      {/* OTel Compliance Detail */}
+      {compliance && compliance.gaps.length > 0 && (
+        <section style={{
+          borderBottom: '1px solid var(--border)',
+          background: 'var(--surface)',
+          padding: '0',
+        }}>
+          <button
+            onClick={() => setComplianceOpen((prev) => !prev)}
+            style={{
+              width: '100%',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              background: 'transparent',
+              border: 'none',
+              color: 'var(--text-primary)',
+              fontSize: 12,
+              padding: '10px 16px',
+              cursor: 'pointer',
+            }}
+          >
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+              <ShieldCheck size={14} strokeWidth={1.6} color={compliance.failed <= 2 ? '#F59E0B' : '#EF4444'} />
+              Compliance Gaps ({compliance.failed})
+            </span>
+            {complianceOpen ? <ChevronDown size={14} /> : <ChevronUp size={14} />}
+          </button>
+          {complianceOpen && (
+            <div style={{ padding: '0 16px 14px', maxHeight: 200, overflow: 'auto' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 11 }}>
+                <thead>
+                  <tr style={{ borderBottom: '1px solid var(--border)' }}>
+                    <th style={{ padding: '4px 8px', textAlign: 'left', color: 'var(--text-tertiary)' }}>Field</th>
+                    <th style={{ padding: '4px 8px', textAlign: 'left', color: 'var(--text-tertiary)' }}>Expected</th>
+                    <th style={{ padding: '4px 8px', textAlign: 'left', color: 'var(--text-tertiary)' }}>Actual</th>
+                    <th style={{ padding: '4px 8px', textAlign: 'left', color: 'var(--text-tertiary)' }}>Severity</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {compliance.gaps.map((g, i) => {
+                    const sevColor = g.severity === 'ERROR' ? '#EF4444' : g.severity === 'WARNING' ? '#F59E0B' : 'var(--text-tertiary)'
+                    return (
+                      <tr key={i} style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
+                        <td style={{ padding: '6px 8px', fontFamily: 'monospace', color: 'var(--text-primary)' }}>{g.field}</td>
+                        <td style={{ padding: '6px 8px', color: 'var(--text-secondary)' }}>{g.expected}</td>
+                        <td style={{ padding: '6px 8px', color: sevColor }}>{g.actual}</td>
+                        <td style={{ padding: '6px 8px' }}>
+                          <span style={{
+                            fontSize: 9, fontWeight: 600, padding: '1px 6px', borderRadius: 3,
+                            background: g.severity === 'ERROR' ? 'rgba(239,68,68,0.1)' : g.severity === 'WARNING' ? 'rgba(245,158,11,0.1)' : 'rgba(255,255,255,0.06)',
+                            color: sevColor,
+                          }}>
+                            {g.severity}
+                          </span>
+                        </td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </section>
+      )}
 
       <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
         <div style={{ flex: 1 }}>

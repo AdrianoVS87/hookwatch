@@ -8,10 +8,12 @@ import com.hookwatch.dto.AnnotationDto;
 import com.hookwatch.dto.MemoryLineageDto;
 import com.hookwatch.dto.SpanDto;
 import com.hookwatch.dto.TraceDto;
+import com.hookwatch.repository.AgentRepository;
 import com.hookwatch.repository.AnnotationRepository;
 import com.hookwatch.repository.TraceRepository;
 import com.hookwatch.security.TenantContext;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -25,10 +27,14 @@ import java.util.*;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class TraceService {
 
     private final TraceRepository traceRepository;
     private final AnnotationRepository annotationRepository;
+    private final AgentRepository agentRepository;
+    private final FingerprintService fingerprintService;
+    private final OtelComplianceService otelComplianceService;
     private final TraceEventPublisher eventPublisher;
 
     @Transactional
@@ -60,6 +66,25 @@ public class TraceService {
         spans.forEach(s -> s.setTraceId(saved.getId()));
         saved.setSpans(spans);
         Trace result = traceRepository.save(saved);
+
+        // Upsert failure fingerprints for spans with error status (non-blocking)
+        try {
+            UUID tenantId = resolveTenantIdForAgent(result.getAgentId());
+            if (tenantId != null) {
+                for (Span span : result.getSpans()) {
+                    fingerprintService.upsertFingerprint(tenantId, result.getAgentId(), span);
+                }
+            }
+        } catch (Exception e) {
+            log.warn("Failed to upsert fingerprint for trace {}: {}", result.getId(), e.getMessage());
+        }
+
+        // Log OTel compliance warnings on ingest (non-blocking)
+        try {
+            otelComplianceService.logComplianceWarnings(result);
+        } catch (Exception e) {
+            log.warn("Failed compliance check for trace {}: {}", result.getId(), e.getMessage());
+        }
 
         eventPublisher.publish(result.getId(), result);
         return result;
@@ -224,6 +249,16 @@ public class TraceService {
         }
         String value = rawTag.trim().toLowerCase(Locale.ROOT);
         return value.isEmpty() ? null : value;
+    }
+
+    /**
+     * Resolves the tenant ID that owns the given agent.
+     * Returns null if agent not found (shouldn't happen for valid traces).
+     */
+    private UUID resolveTenantIdForAgent(UUID agentId) {
+        return agentRepository.findById(agentId)
+                .map(agent -> agent.getTenantId())
+                .orElse(null);
     }
 
     private Span mapSpan(SpanDto dto) {

@@ -28,6 +28,7 @@ public class AnalyticsService {
 
         List<AnalyticsDto.MemoryLineage> memoryLineage = getMemoryLineage(agentId, from, to, model);
         List<AnalyticsDto.FailureFingerprint> failureFingerprints = getFailureFingerprints(agentId, from, to, model);
+        List<AnalyticsDto.FailureFingerprintTrend> failureFingerprintTrends = getFailureFingerprintTrends(agentId, from, to, model);
         AnalyticsDto.LearningVelocity learningVelocity = getLearningVelocity(agentId, from, to, model, failureFingerprints);
         List<AnalyticsDto.LearningVelocityByModel> learningVelocityByModel = getLearningVelocityByModel(agentId, from, to, model);
         AnalyticsDto.OTelCompliance otelCompliance = getOtelCompliance(agentId, from, to, model);
@@ -42,6 +43,7 @@ public class AnalyticsService {
                 learningVelocity,
                 learningVelocityByModel,
                 failureFingerprints,
+                failureFingerprintTrends,
                 otelCompliance,
                 evalLoopSummary
         );
@@ -288,6 +290,50 @@ public class AnalyticsService {
                     r[2] == null ? 0.0 : ((Number) r[2]).doubleValue(),
                     r[3] == null ? 0.0 : ((Number) r[3]).doubleValue(),
                     r[4] == null ? 0.0 : ((Number) r[4]).doubleValue()
+            ));
+        }
+        return result;
+    }
+
+    private List<AnalyticsDto.FailureFingerprintTrend> getFailureFingerprintTrends(UUID agentId, LocalDate from, LocalDate to, String model) {
+        String modelClause = model != null ? "AND t.metadata->>'model' = :model" : "";
+        String sql = """
+                WITH failed AS (
+                    SELECT
+                        date_trunc('day', t.started_at)::date AS day,
+                        CASE
+                            WHEN COALESCE(t.metadata->>'failureFingerprint', '') <> '' THEN t.metadata->>'failureFingerprint'
+                            WHEN EXISTS (SELECT 1 FROM spans s WHERE s.trace_id = t.id AND COALESCE(s.error, '') ILIKE '%%timeout%%') THEN 'TOOL_TIMEOUT'
+                            WHEN EXISTS (SELECT 1 FROM spans s WHERE s.trace_id = t.id AND (COALESCE(s.error, '') ILIKE '%%429%%' OR COALESCE(s.error, '') ILIKE '%%rate limit%%')) THEN 'RATE_LIMIT'
+                            WHEN EXISTS (SELECT 1 FROM spans s WHERE s.trace_id = t.id AND COALESCE(s.error, '') ILIKE '%%context%%') THEN 'CONTEXT_OVERFLOW'
+                            WHEN EXISTS (SELECT 1 FROM spans s WHERE s.trace_id = t.id AND COALESCE(s.error, '') ILIKE '%%retriev%%') THEN 'RETRIEVAL_NULL'
+                            ELSE 'FAILED_UNKNOWN'
+                        END AS fp
+                    FROM traces t
+                    WHERE t.agent_id = :agentId
+                      AND t.started_at >= :from
+                      AND t.started_at < :to
+                      AND t.status = 'FAILED'
+                      """ + modelClause + """
+                )
+                SELECT day::text, fp, COUNT(*)
+                FROM failed
+                GROUP BY day, fp
+                ORDER BY day ASC, COUNT(*) DESC
+                LIMIT 200
+                """;
+
+        Query q = em.createNativeQuery(sql);
+        bindCommon(q, agentId, from, to, model);
+
+        @SuppressWarnings("unchecked")
+        List<Object[]> rows = q.getResultList();
+        List<AnalyticsDto.FailureFingerprintTrend> result = new ArrayList<>();
+        for (Object[] row : rows) {
+            result.add(new AnalyticsDto.FailureFingerprintTrend(
+                    row[0].toString(),
+                    (String) row[1],
+                    ((Number) row[2]).intValue()
             ));
         }
         return result;
