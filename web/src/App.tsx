@@ -1,6 +1,6 @@
 import { useState, useEffect, lazy, Suspense } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
-import { LayoutDashboard, GitBranch, GitCompareArrows, Settings, Search, Webhook, ChevronLeft, ChevronRight, BarChart3 } from 'lucide-react'
+import { LayoutDashboard, GitBranch, GitCompareArrows, Settings, Search, Webhook, ChevronLeft, ChevronRight, BarChart3, AlertTriangle } from 'lucide-react'
 import Dashboard from './pages/Dashboard'
 import CommandPalette from './components/CommandPalette'
 import GlobalContextBar from './components/GlobalContextBar'
@@ -10,14 +10,16 @@ import './index.css'
 const TraceView = lazy(() => import('./pages/TraceView'))
 const CompareView = lazy(() => import('./pages/CompareView'))
 const AnalyticsView = lazy(() => import('./pages/AnalyticsView'))
+const FingerprintView = lazy(() => import('./pages/FingerprintView'))
 const SettingsView = lazy(() => import('./pages/Settings'))
 
-type Page = 'dashboard' | 'traces' | 'analytics' | 'compare' | 'settings'
+type Page = 'dashboard' | 'traces' | 'analytics' | 'fingerprints' | 'compare' | 'settings'
 
 const NAV = [
   { id: 'dashboard' as Page, label: 'Dashboard', icon: LayoutDashboard },
   { id: 'traces'    as Page, label: 'Traces',    icon: GitBranch },
   { id: 'analytics' as Page, label: 'Analytics', icon: BarChart3 },
+  { id: 'fingerprints' as Page, label: 'Fingerprints', icon: AlertTriangle },
   { id: 'compare'   as Page, label: 'Compare',   icon: GitCompareArrows },
   { id: 'settings'  as Page, label: 'Settings',  icon: Settings },
 ]
@@ -184,6 +186,11 @@ export default function App() {
             {page === 'analytics' && (
               <Suspense fallback={<div style={{ padding: 40, color: 'var(--text-tertiary)' }}>Loading…</div>}>
                 <AnalyticsView />
+              </Suspense>
+            )}
+            {page === 'fingerprints' && (
+              <Suspense fallback={<div style={{ padding: 40, color: 'var(--text-tertiary)' }}>Loading…</div>}>
+                <FingerprintView />
               </Suspense>
             )}
             {page === 'compare' && (

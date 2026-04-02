@@ -55,6 +55,21 @@ public class FingerprintService {
     }
 
     /**
+     * Groups failed spans by fingerprint hash.
+     */
+    public Map<String, List<Span>> groupByHash(List<Span> spans) {
+        if (spans == null || spans.isEmpty()) return Map.of();
+        Map<String, List<Span>> grouped = new LinkedHashMap<>();
+        for (Span span : spans) {
+            if (span.getStatus() == Span.Status.FAILED && span.getError() != null && !span.getError().isBlank()) {
+                String hash = computeFingerprint(span);
+                grouped.computeIfAbsent(hash, k -> new ArrayList<>()).add(span);
+            }
+        }
+        return grouped;
+    }
+
+    /**
      * Upserts a fingerprint for a failed span during trace ingestion.
      * Thread-safe: uses findByHash + save with retry-on-conflict semantics.
      */

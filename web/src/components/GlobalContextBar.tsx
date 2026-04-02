@@ -56,6 +56,7 @@ export default function GlobalContextBar() {
           return (
             <motion.button
               key={agent.id}
+              data-testid="agent-pill"
               whileTap={{ scale: 0.96 }}
               onClick={() => selectAgent(agent.id)}
               style={{

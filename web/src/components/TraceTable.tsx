@@ -3,6 +3,7 @@ import { motion } from 'framer-motion'
 import { ArrowUp, ArrowDown, GitCompareArrows, Plus } from 'lucide-react'
 import type { Trace, TraceStatus, Score } from '../types'
 import { fetchTraceScores } from '../api/traces'
+import { fetchTraceCompliance } from '../api/compliance'
 import { useCompareStore } from '../stores/useCompareStore'
 import { useTraceStore } from '../stores/useTraceStore'
 
@@ -96,6 +97,7 @@ export default function TraceTable({ traces, onSelect, onCompare, totalElements,
   const [sortKey, setSortKey] = useState<SortKey>('startedAt')
   const [sortAsc, setSortAsc] = useState(false)
   const [traceScores, setTraceScores] = useState<Record<string, Score[]>>({})
+  const [complianceBadge, setComplianceBadge] = useState<Record<string, 'green' | 'yellow' | 'red'>>({})
   const { selectedTraces, toggleTrace } = useCompareStore()
   const storeSelectedTrace = useTraceStore((s) => s.selectedTrace)
   const selectedTraceId = selectedTraceIdProp ?? storeSelectedTrace?.id ?? null
@@ -112,7 +114,21 @@ export default function TraceTable({ traces, onSelect, onCompare, totalElements,
         }).catch(() => {/* scores unavailable */})
       }
     })
-  }, [traces])
+
+    traceIds.slice(0, 20).forEach(id => {
+      if (!complianceBadge[id]) {
+        fetchTraceCompliance(id)
+          .then((report) => {
+            const ratio = report.totalChecks > 0 ? report.passed / report.totalChecks : 0
+            const badge: 'green' | 'yellow' | 'red' = ratio >= 0.9 ? 'green' : ratio >= 0.7 ? 'yellow' : 'red'
+            setComplianceBadge(prev => ({ ...prev, [id]: badge }))
+          })
+          .catch(() => {
+            setComplianceBadge(prev => ({ ...prev, [id]: 'red' }))
+          })
+      }
+    })
+  }, [traces, complianceBadge, traceScores])
 
   const sorted = [...traces].sort((a, b) => {
     const v = (t: Trace): string | number => {
@@ -164,7 +180,7 @@ export default function TraceTable({ traces, onSelect, onCompare, totalElements,
     </th>
   )
 
-  const StaticCol = ({ label, width, align = 'left' }: { label: string; width?: number; align?: 'left' | 'right' }) => (
+  const StaticCol = ({ label, width, align = 'left' }: { label: string; width?: number; align?: 'left' | 'right' | 'center' }) => (
     <th style={{
       padding: '10px 16px', textAlign: align,
       fontSize: 11, fontWeight: 500, color: 'var(--text-tertiary)',
@@ -200,6 +216,7 @@ export default function TraceTable({ traces, onSelect, onCompare, totalElements,
             <Col label="Tokens" col="totalTokens" width={100} align="right" />
             <Col label="Cost" col="totalCost" width={100} align="right" />
             <StaticCol label="Tags" width={260} />
+            <StaticCol label="Compliance" width={110} align="center" />
             {hasScores && <StaticCol label="Scores" width={140} />}
             <StaticCol label="Duration" width={90} align="right" />
             <Col label="Started" col="startedAt" />
@@ -330,6 +347,30 @@ export default function TraceTable({ traces, onSelect, onCompare, totalElements,
                       <Plus size={11} strokeWidth={2} />
                     </button>
                   </div>
+                </td>
+                <td style={{ padding: '12px 16px', textAlign: 'center' }}>
+                  {(() => {
+                    const badge = complianceBadge[trace.id]
+                    const bg = badge === 'green' ? 'rgba(16,185,129,0.12)' : badge === 'yellow' ? 'rgba(245,158,11,0.12)' : 'rgba(239,68,68,0.12)'
+                    const color = badge === 'green' ? '#10B981' : badge === 'yellow' ? '#F59E0B' : '#EF4444'
+                    const text = badge === 'green' ? 'Good' : badge === 'yellow' ? 'Partial' : 'Gap'
+                    return (
+                      <span style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        minWidth: 58,
+                        padding: '2px 8px',
+                        borderRadius: 999,
+                        fontSize: 10,
+                        fontWeight: 600,
+                        background: bg,
+                        color,
+                      }}>
+                        {text}
+                      </span>
+                    )
+                  })()}
                 </td>
                 {hasScores && (
                   <td style={{ padding: '12px 16px' }}>
