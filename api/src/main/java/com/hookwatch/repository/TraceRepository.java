@@ -116,4 +116,17 @@ public interface TraceRepository extends JpaRepository<Trace, UUID> {
         SELECT COUNT(t) FROM Trace t WHERE t.agentId = :agentId AND t.status = 'COMPLETED'
     """)
     long countCompletedByAgentId(@Param("agentId") UUID agentId);
+
+    @Query(value = """
+        SELECT COALESCE(
+            percentile_cont(0.95) WITHIN GROUP (
+                ORDER BY EXTRACT(EPOCH FROM (t.completed_at - t.started_at)) * 1000
+            ), 0
+        )
+        FROM traces t
+        WHERE t.agent_id = :agentId
+          AND t.completed_at IS NOT NULL
+          AND t.started_at IS NOT NULL
+        """, nativeQuery = true)
+    Double p95LatencyMsByAgentId(@Param("agentId") UUID agentId);
 }

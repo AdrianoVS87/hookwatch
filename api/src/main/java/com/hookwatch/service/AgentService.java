@@ -60,8 +60,7 @@ public class AgentService {
         long completed = traceRepository.countCompletedByAgentId(agentId);
         double successRate = total > 0 ? (double) completed / total * 100.0 : 0.0;
 
-        // p95 latency placeholder — requires percentile query or metrics backend
-        long p95LatencyMs = 0L;
+        long p95LatencyMs = Math.round(Optional.ofNullable(traceRepository.p95LatencyMsByAgentId(agentId)).orElse(0.0));
 
         return new AgentMetricsDto(total, avgTokens, avgCost, successRate, p95LatencyMs);
     }
