@@ -10,7 +10,6 @@ import type { EnvProfile, AutoRefresh, DefaultRange } from '../stores/useSetting
 
 const S = {
   page: {
-    padding: '28px 40px',
     display: 'flex',
     flexDirection: 'column' as const,
     gap: 24,
@@ -310,7 +309,7 @@ export default function Settings() {
   }
 
   return (
-    <div style={S.page}>
+    <div className="page-padding" style={S.page}>
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>

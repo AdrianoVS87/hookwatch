@@ -330,7 +330,7 @@ export default function AnalyticsView() {
   }))
 
   return (
-    <div style={{ padding: '28px 40px', display: 'flex', flexDirection: 'column', gap: 24 }}>
+    <div className="page-padding" style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
@@ -380,7 +380,7 @@ export default function AnalyticsView() {
       {!loading && data && (
         <>
           {/* Summary cards */}
-          <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap' }}>
+          <div className="card-grid">
             <SummaryCard
               label="Total Cost"
               value={fmtCost(totalCost)}
@@ -406,7 +406,7 @@ export default function AnalyticsView() {
           </div>
 
           {/* Theta-style operational KPIs */}
-          <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap' }}>
+          <div className="card-grid">
             <SummaryCard
               label="Eval Coverage"
               value={`${(data.evalLoopSummary.evaluationCoverage * 100).toFixed(0)}%`}
@@ -491,7 +491,7 @@ export default function AnalyticsView() {
           </ChartCard>
 
           {/* Pie + Bar side by side */}
-          <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap' }}>
+          <div className="card-grid">
             {/* Pie chart: cost by model */}
             <ChartCard title="Cost by Model" style={{ flex: 1, minWidth: 280 }}>
               <ResponsiveContainer width="100%" height={220}>
@@ -550,7 +550,7 @@ export default function AnalyticsView() {
           </div>
 
           {/* Memory lineage + fingerprint insights */}
-          <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap' }}>
+          <div className="card-grid">
             <ChartCard title="Learning Velocity by Model" style={{ flex: 1, minWidth: 320 }}>
               <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
                 <thead>

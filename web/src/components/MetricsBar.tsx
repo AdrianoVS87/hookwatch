@@ -26,14 +26,15 @@ export default function MetricsBar() {
 
   return (
     <div style={{
-      display: 'flex', gap: 0,
+      display: 'flex', gap: 0, flexWrap: 'wrap',
       borderBottom: '1px solid var(--border)',
       background: 'var(--surface)',
     }}>
       {items.map((item, i) => (
         <div key={i} style={{
-          flex: 1,
-          padding: '12px 20px',
+          flex: '1 1 auto',
+          minWidth: 100,
+          padding: '10px clamp(8px, 2vw, 20px)',
           borderRight: i < items.length - 1 ? '1px solid var(--border)' : 'none',
         }}>
           <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.55)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 4 }}>

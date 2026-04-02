@@ -65,6 +65,104 @@ body {
 ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 3px; }
 ::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.2); }
 
+/* ── Responsive page padding ───────────────────────────────────────── */
+.page-padding {
+  padding: 28px 40px;
+}
+@media (max-width: 768px) {
+  .page-padding { padding: 20px 20px; }
+}
+@media (max-width: 480px) {
+  .page-padding { padding: 16px 12px; }
+}
+
+/* Responsive card grid — stack on mobile */
+.card-grid {
+  display: flex;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+@media (max-width: 640px) {
+  .card-grid { flex-direction: column; }
+  .card-grid > * { min-width: 0 !important; flex: 1 1 100% !important; }
+}
+
+/* Tables scroll horizontally on mobile */
+.table-responsive {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Trace detail: side-by-side on desktop, stacked on mobile */
+.trace-detail-layout {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+}
+@media (max-width: 640px) {
+  .trace-detail-layout {
+    flex-direction: column;
+    overflow: auto;
+  }
+  .trace-detail-layout > div:first-child {
+    min-height: 300px;
+  }
+}
+
+/* ── Mobile responsiveness ─────────────────────────────────────────── */
+
+/* Force touch-friendly tap targets */
+@media (max-width: 640px) {
+  button, input, select, textarea {
+    min-height: 36px;
+  }
+  table { font-size: 12px; }
+  th, td { padding: 6px 8px !important; }
+}
+
+/* Hide desktop sidebar on mobile */
+@media (max-width: 640px) {
+  [data-sidebar] { display: none !important; }
+  [data-main] { padding-bottom: 56px !important; }
+}
+
+/* Show bottom nav only on mobile */
+[data-bottomnav] { display: none; }
+@media (max-width: 640px) {
+  [data-bottomnav] {
+    display: flex !important;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 56px;
+    background: var(--surface);
+    border-top: 1px solid var(--border);
+    z-index: 100;
+    justify-content: space-around;
+    align-items: center;
+    padding: 0 4px;
+    -webkit-backdrop-filter: blur(12px);
+    backdrop-filter: blur(12px);
+  }
+  [data-bottomnav] button {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    padding: 6px 2px;
+    min-height: 44px;
+  }
+  [data-bottomnav] button span {
+    font-size: 9px;
+    letter-spacing: 0.02em;
+  }
+}
+
 /* ReactFlow override — remove white background */
 .react-flow { background: var(--bg) !important; }
 .react-flow__background { background: var(--bg) !important; }

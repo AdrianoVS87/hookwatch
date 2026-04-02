@@ -45,7 +45,7 @@ export default function Dashboard({ onCompare }: { onCompare?: () => void }) {
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
       {/* Header */}
       <header style={{
-        padding: '20px 40px 16px',
+        padding: 'clamp(12px, 3vw, 20px) clamp(12px, 4vw, 40px) 16px',
         borderBottom: '1px solid var(--border)',
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: availableTags.length > 0 ? 12 : 0 }}>
@@ -117,7 +117,7 @@ export default function Dashboard({ onCompare }: { onCompare?: () => void }) {
 
 function LoadingState() {
   return (
-    <div style={{ padding: '40px', display: 'flex', flexDirection: 'column', gap: 1 }}>
+    <div className="page-padding" style={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
       {[...Array(5)].map((_, i) => (
         <div key={i} style={{
           height: 44, borderRadius: 6,

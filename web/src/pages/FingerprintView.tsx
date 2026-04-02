@@ -74,13 +74,13 @@ export default function FingerprintView() {
   }, [agentId])
 
   return (
-    <div style={{ padding: '24px 36px', display: 'flex', flexDirection: 'column', gap: 16 }}>
+    <div className="page-padding" style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
         <AlertTriangle size={18} color="#F59E0B" />
         <h2 style={{ margin: 0, fontSize: 20, fontWeight: 600 }}>Failure Fingerprints</h2>
       </div>
 
-      <div style={{ border: '1px solid var(--border)', borderRadius: 10, overflow: 'hidden', background: 'var(--surface)' }}>
+      <div className="table-responsive" style={{ border: '1px solid var(--border)', borderRadius: 10, overflow: 'hidden', background: 'var(--surface)' }}>
         <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
           <thead>
             <tr style={{ borderBottom: '1px solid var(--border)' }}>

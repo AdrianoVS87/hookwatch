@@ -22,11 +22,11 @@ export default function GlobalContextBar() {
 
   return (
     <div style={{
-      height: 44,
+      minHeight: 44,
       display: 'flex',
       alignItems: 'center',
-      gap: 12,
-      padding: '0 24px',
+      gap: 8,
+      padding: '0 clamp(8px, 2vw, 24px)',
       background: 'var(--surface)',
       borderBottom: '1px solid var(--border)',
       flexShrink: 0,

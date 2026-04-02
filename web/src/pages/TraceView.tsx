@@ -48,7 +48,7 @@ export default function TraceView() {
 
   if (!selectedTrace) {
     return (
-      <div style={{ padding: '40px 48px' }}>
+      <div className="page-padding">
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
           <GitBranch size={18} strokeWidth={1.5} style={{ color: 'var(--accent)' }} />
           <h2 style={{ fontSize: 20, fontWeight: 600, color: 'var(--text-primary)', letterSpacing: '-0.02em' }}>Traces</h2>
@@ -89,8 +89,8 @@ export default function TraceView() {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
       <header style={{
-        display: 'flex', alignItems: 'center', gap: 12,
-        padding: '12px 20px', borderBottom: '1px solid var(--border)',
+        display: 'flex', alignItems: 'center', gap: 8,
+        padding: '10px clamp(10px, 2vw, 20px)', borderBottom: '1px solid var(--border)',
         flexShrink: 0, flexWrap: 'wrap',
       }}>
         <button
@@ -289,7 +289,7 @@ export default function TraceView() {
         </section>
       )}
 
-      <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
+      <div className="trace-detail-layout">
         <div style={{ flex: 1 }}>
           {selectedTrace.spans.length === 0 ? (
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: 'var(--text-tertiary)', fontSize: 13 }}>

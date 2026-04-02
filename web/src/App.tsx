@@ -24,13 +24,18 @@ const NAV = [
   { id: 'settings'  as Page, label: 'Settings',  icon: Settings },
 ]
 
+/** Primary nav items shown on both sidebar and bottom bar. */
+const BOTTOM_NAV: Page[] = ['dashboard', 'traces', 'analytics', 'fingerprints', 'settings']
+
 export default function App() {
   const [page, setPage] = useState<Page>('dashboard')
   const openCommandPalette = useUIStore((s) => s.openCommandPalette)
   const [collapsed, setCollapsed] = useState(window.innerWidth < 1024)
 
   useEffect(() => {
-    const handler = () => setCollapsed(window.innerWidth < 1024)
+    const handler = () => {
+      setCollapsed(window.innerWidth < 1024)
+    }
     window.addEventListener('resize', handler)
     return () => window.removeEventListener('resize', handler)
   }, [])
@@ -38,9 +43,9 @@ export default function App() {
   const sidebarWidth = collapsed ? 52 : 220
 
   return (
-    <div style={{ display: 'flex', height: '100vh', background: 'var(--bg)', minWidth: 360 }}>
-      {/* Sidebar */}
-      <aside style={{
+    <div style={{ display: 'flex', height: '100vh', background: 'var(--bg)', minWidth: 320 }}>
+      {/* Sidebar — hidden on mobile via CSS */}
+      <aside data-sidebar style={{
         width: sidebarWidth,
         background: 'var(--surface)',
         borderRight: '1px solid var(--border)',
@@ -163,7 +168,7 @@ export default function App() {
       </aside>
 
       {/* Main content */}
-      <main style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', position: 'relative' }}>
+      <main data-main style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', position: 'relative' }}>
         {/* Global context bar — shown on all data pages */}
         {page !== 'settings' && <GlobalContextBar />}
 
@@ -207,6 +212,23 @@ export default function App() {
         </AnimatePresence>
         </div>
       </main>
+
+      {/* Bottom nav bar — visible only on mobile via CSS */}
+      <nav data-bottomnav>
+        {NAV.filter(n => BOTTOM_NAV.includes(n.id)).map(({ id, label, icon: Icon }) => {
+          const active = page === id
+          return (
+            <button
+              key={id}
+              onClick={() => setPage(id)}
+              style={{ color: active ? 'var(--accent-hover)' : 'var(--text-tertiary)' }}
+            >
+              <Icon size={18} strokeWidth={1.5} />
+              <span style={{ fontWeight: active ? 600 : 400 }}>{label}</span>
+            </button>
+          )
+        })}
+      </nav>
 
       <CommandPalette />
     </div>
