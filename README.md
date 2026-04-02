@@ -1,34 +1,26 @@
-# HookWatch 🪝
+# HookWatch
 
-> Observability platform for AI agent traces — inspect every LLM call, tool
-> invocation, and retrieval in real time with an interactive span graph.
+> Observability platform for AI agent execution — trace every LLM call, tool invocation, and retrieval step in real time.
 
 [![CI/CD](https://github.com/AdrianoVS87/hookwatch/actions/workflows/ci.yml/badge.svg)](https://github.com/AdrianoVS87/hookwatch/actions/workflows/ci.yml)
 [![Deploy](https://github.com/AdrianoVS87/hookwatch/actions/workflows/deploy.yml/badge.svg)](https://github.com/AdrianoVS87/hookwatch/actions/workflows/deploy.yml)
+[![Tests](https://img.shields.io/badge/tests-58_passing-brightgreen)](api/src/test/java/com/hookwatch/)
 [![Java](https://img.shields.io/badge/Java-21-orange?logo=openjdk&logoColor=white)](https://openjdk.org/projects/jdk/21/)
 [![Spring Boot](https://img.shields.io/badge/Spring_Boot-3.4-brightgreen?logo=springboot&logoColor=white)](https://spring.io/projects/spring-boot)
-[![React](https://img.shields.io/badge/React-18-61dafb?logo=react&logoColor=white)](https://react.dev)
+[![React](https://img.shields.io/badge/React-19-61dafb?logo=react&logoColor=white)](https://react.dev)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5-3178c6?logo=typescript&logoColor=white)](https://www.typescriptlang.org)
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-336791?logo=postgresql&logoColor=white)](https://www.postgresql.org)
 [![License](https://img.shields.io/badge/License-MIT-lightgrey)](LICENSE)
 
-**API Docs:** [Swagger UI](http://localhost:8080/swagger-ui/index.html) · [OpenAPI JSON](http://localhost:8080/api/v1/openapi.json)
+**[Live Demo](https://hookwatch-one.vercel.app)** · **[API Docs](docs/API.md)** · **[Swagger UI](http://localhost:8080/swagger-ui/index.html)**
 
 ---
 
 ## What is HookWatch?
 
-HookWatch provides a REST API that AI agents call to record their execution
-traces — each span captures an LLM call, tool invocation, or retrieval step
-with token counts, costs, latency, and I/O payloads.
+HookWatch is a REST API + dashboard for recording and analyzing AI agent execution traces. Agents submit traces containing nested spans (LLM calls, tool invocations, retrieval steps) via a single POST request. Each span captures token counts, costs, latency, model used, and full I/O payloads.
 
-A React frontend renders the trace as a live DAG using React Flow, letting
-engineers debug agent behavior without reading raw JSON logs.
-
-```
-Agent code → POST /api/v1/traces → HookWatch API → PostgreSQL
-                                                  ↓
-                                          SSE stream → React canvas
-```
+The React frontend renders traces as interactive directed acyclic graphs using React Flow, streams live updates via Server-Sent Events, and provides cost analytics with per-model breakdowns — all scoped to isolated tenants via BCrypt-hashed API keys.
 
 ---
 
@@ -36,120 +28,99 @@ Agent code → POST /api/v1/traces → HookWatch API → PostgreSQL
 
 ```mermaid
 graph TB
-    subgraph Client
-        Browser["Browser\n(React 18 + React Flow)"]
-    end
-
-    subgraph API ["API  (Spring Boot 3.4 · Java 21)"]
-        REST["REST Controllers\n/api/v1/*"]
-        SSE["SseEmitter\n/traces/{id}/stream"]
-        Filter["ApiKeyFilter\nX-API-Key auth"]
-        Service["Services\n@Transactional"]
+    Agent["AI Agent / SDK"]
+    
+    subgraph API ["Spring Boot 3.4 · Java 21"]
+        Filter["ApiKeyFilter\nBCrypt · Tenant isolation"]
+        Controllers["12 REST Controllers\n30+ endpoints"]
+        Services["Services\n@Transactional"]
         JPA["Spring Data JPA\n@EntityGraph"]
+        SSE["SseEmitter\nReal-time push"]
     end
 
     subgraph Storage
-        PG["PostgreSQL 16\ntenants · agents · traces · spans"]
-        Redis["Redis 7\ncache · future pub/sub"]
+        PG["PostgreSQL 16\nFlyway V1–V8 · JSONB · GIN"]
+        Redis["Redis 7\nCache"]
     end
 
-    Browser -->|"REST + X-API-Key"| Filter
-    Filter --> REST
-    Filter --> SSE
-    REST --> Service
-    SSE --> Service
-    Service --> JPA
+    Browser["React 19 · TypeScript 5\nReact Flow · Recharts · Zustand"]
+
+    Agent -->|"POST /api/v1/traces\nX-API-Key"| Filter
+    Filter --> Controllers
+    Controllers --> Services
+    Services --> JPA
     JPA --> PG
-    Service -.->|future| Redis
+    Services -.-> Redis
+    SSE -->|"text/event-stream"| Browser
+    Browser -->|"REST + X-API-Key"| Filter
 ```
 
 ---
 
-## Key features
+## Key Features
 
-| Feature | Detail |
-|---------|--------|
-| **Trace ingestion** | `POST /api/v1/traces` accepts a full trace with nested spans in a single request |
-| **Live canvas** | SSE stream pushes new spans to the React Flow graph without polling |
-| **Span graph** | Dagre auto-layout, color-coded by type, red border on FAILED, pulse on RUNNING |
-| **Span detail** | Click any node → side panel with Overview / Input / Output / Error tabs |
-| **Metrics** | Per-agent aggregates: total traces, avg tokens, avg cost, success rate, p95 latency |
-| **Command palette** | ⌘K fuzzy search across agents and traces |
-| **API key auth** | Per-tenant opaque API keys, validated on every request via servlet filter |
-| **Flyway migrations** | Schema-as-code, versioned SQL, CI-validated against real PostgreSQL |
+| Feature | Description |
+|---------|-------------|
+| **Trace ingestion** | Single POST creates a trace with nested spans — each span typed as `LLM_CALL`, `TOOL_CALL`, `RETRIEVAL`, or `CUSTOM` |
+| **Execution graph** | Interactive DAG with Dagre auto-layout, color-coded by span type, red border on `FAILED`, pulse animation on `RUNNING` |
+| **Real-time streaming** | Server-Sent Events push new spans to the canvas — no polling, auto-reconnect via `EventSource` |
+| **Cost analytics** | Daily usage, per-model cost breakdown, cost trend vs. previous period, projected monthly cost (Recharts) |
+| **Learning velocity** | Per-model metrics: success rate, cost-per-successful-trace, repeat failure rate, memory hit rate |
+| **Failure fingerprinting** | SHA-256 hash of `(error + span_type + model)` — tracks recurring failure patterns with occurrence trends |
+| **OTel compliance** | Validates W3C `traceparent`, resource attributes, and span attributes — compliance badges per trace |
+| **Auto-evaluation** | Score traces with `NUMERIC`, `CATEGORICAL`, or `BOOLEAN` values via API or LLM judge |
+| **Memory lineage** | Tracks retrieval spans per trace to show which memory sources influenced the agent's output |
+| **Trace comparison** | Side-by-side diff of two traces with token/cost/latency/span deltas |
+| **p95 latency** | Real `percentile_cont(0.95)` calculation via PostgreSQL — not approximated |
+| **Multi-tenant** | BCrypt-hashed API keys, tenant-scoped data access via `ThreadLocal` context, cross-tenant access blocked |
 | **Replay** | Scrub through spans in temporal order with play/pause/speed controls |
+| **Command palette** | `⌘K` fuzzy search across agents and traces |
 
 ---
 
-## Tech stack
+## Tech Stack
 
-### Backend
-- **Java 21** — virtual threads (`spring.threads.virtual.enabled=true`)
-- **Spring Boot 3.4** — MVC, Data JPA, Validation, springdoc-openapi
-- **PostgreSQL 16** — primary store (JSONB for trace metadata)
-- **Redis 7** — cache layer (pub/sub integration planned for horizontal scaling)
-- **Flyway** — versioned schema migrations
-- **Lombok** — reduces boilerplate in domain and DTO classes
-- **Testcontainers** — integration tests against real PostgreSQL
-
-### Frontend
-- **React 18** + **TypeScript 5** (strict mode, zero `any`)
-- **Vite 8** — dev server + production build
-- **@xyflow/react** — interactive span graph canvas
-- **@dagrejs/dagre** — automatic DAG layout algorithm
-- **Zustand** — lightweight global state (`useTraceStore`, `useAgentStore`, `useUIStore`)
-- **Framer Motion** — 200ms ease-out transitions, no bounce
-- **Tailwind CSS v4** — utility classes + CSS custom properties design tokens
-- **Inter** — typography via Google Fonts
+| Layer | Technology |
+|-------|------------|
+| **Backend** | Java 21 (virtual threads), Spring Boot 3.4, Spring Data JPA, Maven |
+| **Frontend** | React 19, TypeScript 5.9 (strict, zero `any`), Vite 8, Zustand, React Flow, Recharts |
+| **Database** | PostgreSQL 16 — Flyway migrations (V1–V8), JSONB metadata, `text[]` tags with GIN index |
+| **Cache** | Redis 7 |
+| **Auth** | X-API-Key header → BCrypt hash comparison → tenant context isolation |
+| **Testing** | JUnit 5, Testcontainers (real PostgreSQL 16), Playwright (e2e), JaCoCo |
+| **API Docs** | springdoc-openapi 2.6 → Swagger UI + OpenAPI 3.0 JSON |
+| **CI/CD** | GitHub Actions → `mvn verify` + `npm run build` → SSH deploy with health check + rollback |
+| **Infra** | Docker multi-stage build (JDK → JRE), Docker Compose with health checks |
 
 ---
 
-## Quick start
+## Quick Start
 
 **Prerequisites:** Docker + Docker Compose v2
 
 ```bash
 git clone git@github.com:AdrianoVS87/hookwatch.git
 cd hookwatch
-
-# Build and start all services
-make up
-
-# Verify all 4 containers are healthy
-docker compose ps
+make up          # Builds and starts all 4 services
 ```
 
-Services:
-| Service | URL | Credentials |
-|---------|-----|-------------|
-| Web UI | http://localhost:3000 | — |
-| API | http://localhost:8080 | API key: `demo-key-hookwatch` |
-| Swagger UI | http://localhost:8080/swagger-ui/index.html | — |
-| OpenAPI JSON | http://localhost:8080/api/v1/openapi.json | — |
-| PostgreSQL | localhost:5432 | `hookwatch` / `hookwatch` |
-| Redis | localhost:6379 | — |
+Once healthy, open:
 
-The `DataSeeder` automatically creates demo data on first startup:
-- Tenant: `Demo Tenant` (API key: `demo-key-hookwatch`)
-- Agents: `OpenClaw Assistant`, `Code Review Bot`
-- 10 traces with realistic LLM and tool call spans
+| Service | URL |
+|---------|-----|
+| Dashboard | http://localhost:3000 |
+| API | http://localhost:8080 |
+| Swagger UI | http://localhost:8080/swagger-ui/index.html |
 
----
+Demo data is seeded automatically via Flyway V7: 3 agents, ~500 traces with realistic multi-model distribution and pricing.
 
-## API overview
-
-See [`docs/API.md`](docs/API.md) for the full reference with curl examples.
-
-- Interactive docs: `http://localhost:8080/swagger-ui/index.html`
-- Versioned spec (JSON): `http://localhost:8080/api/v1/openapi.json`
+### Submit a trace
 
 ```bash
-# Create a tenant (one-time, no auth)
-curl -X POST http://localhost:8080/api/v1/tenants \
-  -H "Content-Type: application/json" \
-  -d '{"name":"my-org"}'
+curl -s http://localhost:8080/api/v1/agents \
+  -H "X-API-Key: demo-key-hookwatch" | jq '.[0].id'
+# Copy the agent ID, then:
 
-# Submit a trace
 curl -X POST http://localhost:8080/api/v1/traces \
   -H "X-API-Key: demo-key-hookwatch" \
   -H "Content-Type: application/json" \
@@ -157,90 +128,185 @@ curl -X POST http://localhost:8080/api/v1/traces \
     "agentId": "<agent-id>",
     "status": "COMPLETED",
     "totalTokens": 1200,
+    "totalCost": 0.018,
     "spans": [
-      {"name":"web_search","type":"TOOL_CALL","status":"COMPLETED","sortOrder":0},
-      {"name":"claude-completion","type":"LLM_CALL","status":"COMPLETED",
-       "model":"claude-sonnet-4-6","inputTokens":400,"outputTokens":800,"sortOrder":1}
+      {
+        "name": "web_search",
+        "type": "TOOL_CALL",
+        "status": "COMPLETED",
+        "sortOrder": 0
+      },
+      {
+        "name": "claude-sonnet-completion",
+        "type": "LLM_CALL",
+        "status": "COMPLETED",
+        "model": "claude-sonnet-4-6",
+        "inputTokens": 400,
+        "outputTokens": 800,
+        "cost": 0.018,
+        "sortOrder": 1
+      }
     ]
   }'
 ```
 
-### Export OpenAPI to Postman Collection
+---
+
+## Running Tests
 
 ```bash
-# Generates docs/postman/hookwatch.postman_collection.json
-make postman-export
+cd api
+mvn test    # 58 integration tests, ~3 min
 ```
 
-This target reads `http://localhost:8080/api/v1/openapi.json` and converts it with `openapi-to-postmanv2` via `npx`.
+All tests run against a real PostgreSQL 16 instance via **Testcontainers** — not H2 mocks.
+
+| Test Suite | Tests | What it validates |
+|-----------|-------|-------------------|
+| AnalyticsIntegrationTest | 10 | Daily usage, model breakdown, cost trends, learning velocity, compliance |
+| OtelExportIntegrationTest | 9 | OTLP JSON export, ingest, roundtrip conversion |
+| ScoreIntegrationTest | 7 | Score CRUD, auto-evaluation, summary aggregation |
+| TraceIngestionIntegrationTest | 4 | Create trace with spans, validation, status transitions |
+| TraceComparisonIntegrationTest | 4 | Side-by-side delta calculation |
+| ApiKeyAuthIntegrationTest | 4 | BCrypt matching, missing key, invalid key |
+| TenantIsolationIntegrationTest | 3 | Cross-tenant data access blocked (403) |
+| OtelComplianceIntegrationTest | 3 | Gap detection, traceparent validation |
+| PaginationIntegrationTest | 3 | Page size, sorting, offset |
+| TraceTagsAndAnnotationsIntegrationTest | 3 | Tag normalization, annotation CRUD |
+| + 5 more test classes | 8 | Repository, controller, fingerprint, lineage, context load |
+
+Frontend: 3 Playwright e2e tests (dashboard, compliance, fingerprints).
 
 ---
 
-## Project structure
+## API Overview
+
+30+ endpoints across 12 controllers. Full reference: [`docs/API.md`](docs/API.md)
+
+**Core resources:**
+
+```
+POST   /api/v1/tenants                      # Create tenant (returns API key)
+POST   /api/v1/agents                       # Register agent
+POST   /api/v1/traces                       # Submit trace with spans
+GET    /api/v1/traces?agentId=&tag=          # List traces (paginated)
+GET    /api/v1/traces/{id}                   # Get trace with spans
+GET    /api/v1/traces/{id}/stream            # SSE — real-time span updates
+GET    /api/v1/traces/compare?traceId1=&traceId2=  # Side-by-side diff
+```
+
+**Analytics & scoring:**
+
+```
+GET    /api/v1/analytics?agentId=&from=&to=  # Full analytics dashboard data
+GET    /api/v1/agents/{id}/metrics           # Agent metrics (incl. p95 latency)
+POST   /api/v1/traces/{id}/scores            # Score a trace
+GET    /api/v1/traces/{id}/compliance        # OTel compliance report
+GET    /api/v1/fingerprints?agentId=          # Failure pattern trends
+```
+
+**OTel interop:**
+
+```
+GET    /api/v1/traces/{id}/otel              # Export as OTLP JSON
+POST   /api/v1/ingest/otel                   # Ingest OTLP trace
+```
+
+---
+
+## Project Structure
 
 ```
 hookwatch/
-├── api/                          # Spring Boot application
+├── api/                              # Spring Boot 3.4 backend
 │   ├── src/main/java/com/hookwatch/
-│   │   ├── config/               # AppConfig, DataSeeder
-│   │   ├── controller/           # REST + SSE controllers
-│   │   ├── domain/               # JPA entities (Tenant, Agent, Trace, Span)
-│   │   ├── dto/                  # Request/response DTOs with validation
-│   │   ├── filter/               # ApiKeyFilter (authentication)
-│   │   ├── repository/           # Spring Data JPA repositories
-│   │   └── service/              # Business logic + TraceEventPublisher
-│   └── src/main/resources/
-│       ├── application.yml       # Profiles: dev (H2) + docker (PostgreSQL)
-│       └── db/migration/         # Flyway SQL migrations V1–V3
-├── web/                          # React + Vite application
+│   │   ├── config/                   # DataSeeder, OpenApiConfig
+│   │   ├── controller/               # 12 REST controllers
+│   │   ├── domain/                   # 8 JPA entities
+│   │   ├── dto/                      # Request/response DTOs (Jakarta Validation)
+│   │   ├── filter/                   # ApiKeyFilter (BCrypt + tenant resolution)
+│   │   ├── repository/               # Spring Data JPA (JPQL + native queries)
+│   │   ├── security/                 # TenantContext (ThreadLocal)
+│   │   └── service/                  # Business logic (10 service classes)
+│   ├── src/main/resources/
+│   │   ├── application.yml           # Profiles: dev + docker (both validate via Flyway)
+│   │   └── db/migration/             # V1–V8 SQL migrations
+│   ├── src/test/java/                # 15 test classes (Testcontainers)
+│   ├── Dockerfile                    # Multi-stage: JDK build → JRE runtime
+│   └── pom.xml
+├── web/                              # React + Vite frontend
 │   └── src/
-│       ├── api/                  # axios client + endpoint functions
-│       ├── components/           # TraceCanvas, SpanNode, SpanDetail, etc.
-│       ├── pages/                # Dashboard, TraceView, Settings
-│       ├── stores/               # Zustand stores
-│       └── types/                # TypeScript domain types
+│       ├── api/                      # Axios client + typed endpoint modules
+│       ├── components/               # TraceCanvas, SpanNode, SpanDetail, CommandPalette, etc.
+│       ├── pages/                    # Dashboard, TraceView, AnalyticsView, CompareView, Settings
+│       ├── stores/                   # 5 Zustand stores
+│       ├── hooks/                    # useTraceStream (SSE)
+│       └── types/                    # Full TypeScript domain types
 ├── docs/
-│   ├── adr/                      # Architecture Decision Records
-│   └── API.md                    # Full API reference
-├── .github/workflows/ci.yml      # GitHub Actions CI
-├── docker-compose.yml            # Full local stack
-├── Makefile                      # up / down / logs / build / clean
-├── CLAUDE.md                     # Project config + model routing guide
-├── CONTRIBUTING.md               # Dev setup, branching, commit conventions
-└── REVIEW.md                     # Known issues + improvement backlog
+│   ├── adr/                          # 5 Architecture Decision Records
+│   └── API.md                        # Complete API reference with curl examples
+├── .github/workflows/ci.yml          # CI: test + build + deploy
+├── docker-compose.yml                # PostgreSQL 16, Redis 7, API, Web
+├── Makefile                          # up / down / deploy / rollback / postman-export
+└── CONTRIBUTING.md                   # Dev setup, branching, commit conventions
 ```
 
 ---
 
-## Architecture decisions
+## Architecture Decisions
 
-Major technical decisions are documented with full context and trade-offs:
+Each major decision is documented with context, alternatives evaluated, and trade-offs:
 
-| ADR | Decision | Status |
-|-----|----------|--------|
-| [ADR-0001](docs/adr/0001-use-spring-boot-java21.md) | Spring Boot 3.4 + Java 21 virtual threads | Accepted |
-| [ADR-0002](docs/adr/0002-sse-over-websocket.md) | SSE over WebSocket for live span updates | Accepted |
-| [ADR-0003](docs/adr/0003-flyway-schema-migrations.md) | Flyway for schema version control | Accepted |
-| [ADR-0004](docs/adr/0004-xapikey-authentication.md) | X-API-Key header authentication | Accepted |
-| [ADR-0005](docs/adr/0005-react-flow-dagre-layout.md) | React Flow + Dagre for span graph | Accepted |
+| ADR | Decision | Rationale |
+|-----|----------|-----------|
+| [ADR-0001](docs/adr/0001-use-spring-boot-java21.md) | Spring Boot 3.4 + Java 21 | Virtual threads for near-reactive throughput with blocking JDBC |
+| [ADR-0002](docs/adr/0002-sse-over-websocket.md) | SSE over WebSocket | Unidirectional push is sufficient; no broker infrastructure needed |
+| [ADR-0003](docs/adr/0003-flyway-schema-migrations.md) | Flyway migrations | Schema-as-code; CI-validated; Hibernate set to `validate` only |
+| [ADR-0004](docs/adr/0004-xapikey-authentication.md) | X-API-Key authentication | BCrypt-hashed, per-tenant scoped, O(1) lookup via UUID prefix |
+| [ADR-0005](docs/adr/0005-react-flow-dagre-layout.md) | React Flow + Dagre | Deterministic DAG layout with interactive custom nodes |
+
+---
+
+## Database Schema
+
+8 tables managed by Flyway migrations (V1–V8):
+
+```
+tenants              agents               traces               spans
+├── id (PK)          ├── id (PK)          ├── id (PK)          ├── id (PK)
+├── name             ├── tenant_id (FK)   ├── agent_id (FK)    ├── trace_id (FK)
+├── api_key (BCrypt) ├── name             ├── status            ├── parent_span_id
+└── created_at       ├── description      ├── total_tokens      ├── name, type, status
+                     └── created_at       ├── total_cost        ├── input/output_tokens
+                                          ├── metadata (JSONB)  ├── cost, model
+                                          ├── tags (text[], GIN)├── input, output, error
+                                          └── started/completed └── sort_order
+
+scores               annotations          failure_fingerprints  webhooks
+├── id (PK)          ├── id (PK)          ├── id (PK)           ├── id (PK)
+├── trace_id (FK)    ├── trace_id (FK)    ├── tenant_id (FK)    ├── name
+├── name, data_type  ├── text             ├── agent_id (FK)     ├── target_url
+├── numeric/string/  ├── author           ├── hash (SHA-256)    ├── status
+│   boolean_value    └── created_at       ├── error_message     └── created_at
+├── source (API/                          ├── occurrence_count
+│   MANUAL/LLM_JUDGE)                    └── first/last_seen_at
+└── created_at
+```
 
 ---
 
 ## Contributing
 
-See [`CONTRIBUTING.md`](CONTRIBUTING.md) for development setup, branching
-strategy, commit conventions, and PR checklist.
+See [`CONTRIBUTING.md`](CONTRIBUTING.md) for development setup, branching strategy, and commit conventions.
 
 ---
 
 ## Roadmap
 
-- [ ] JWT short-lived tokens for SSE (replace `?apiKey=` query param)
-- [ ] Bcrypt hashing for stored API keys
-- [ ] Redis Pub/Sub for horizontal scaling of SSE
-- [ ] p95 latency via PostgreSQL `percentile_cont` window function
+- [ ] JWT short-lived tokens for SSE endpoint authentication
+- [ ] Redis Pub/Sub for horizontal SSE scaling across multiple pods
 - [ ] Rate limiting on public endpoints (Bucket4j)
-- [ ] OpenTelemetry SDK for auto-instrumentation of common frameworks
+- [ ] OpenTelemetry SDK integration for auto-instrumentation
 
 ---
 
