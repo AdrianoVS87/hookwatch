@@ -21,7 +21,7 @@ branching strategy, commit conventions, and code review expectations.
 
 ```bash
 git clone git@github.com:AdrianoVS87/hookwatch.git
-cd hookwatch
+cd HookWatch
 
 # Start PostgreSQL + Redis
 make up
@@ -31,7 +31,7 @@ cd api
 mvn spring-boot:run -Dspring-boot.run.profiles=dev
 # API available at http://localhost:8080
 # Swagger UI at http://localhost:8080/swagger-ui/index.html
-# Demo data seeded automatically (API key: demo-key-hookwatch)
+# Demo data seeded automatically (API key: demo-key-HookWatch)
 
 # Frontend (in a separate terminal)
 cd web

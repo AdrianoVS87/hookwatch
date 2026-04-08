@@ -4,7 +4,7 @@
 
 [![CI/CD](https://github.com/AdrianoVS87/hookwatch/actions/workflows/ci.yml/badge.svg)](https://github.com/AdrianoVS87/hookwatch/actions/workflows/ci.yml)
 [![Deploy](https://github.com/AdrianoVS87/hookwatch/actions/workflows/deploy.yml/badge.svg)](https://github.com/AdrianoVS87/hookwatch/actions/workflows/deploy.yml)
-[![Tests](https://img.shields.io/badge/tests-58_passing-brightgreen)](api/src/test/java/com/hookwatch/)
+[![Tests](https://img.shields.io/badge/tests-58_passing-brightgreen)](api/src/test/java/com/HookWatch/)
 [![Java](https://img.shields.io/badge/Java-21-orange?logo=openjdk&logoColor=white)](https://openjdk.org/projects/jdk/21/)
 [![Spring Boot](https://img.shields.io/badge/Spring_Boot-3.4-brightgreen?logo=springboot&logoColor=white)](https://spring.io/projects/spring-boot)
 [![React](https://img.shields.io/badge/React-19-61dafb?logo=react&logoColor=white)](https://react.dev)
@@ -100,7 +100,7 @@ graph TB
 
 ```bash
 git clone git@github.com:AdrianoVS87/hookwatch.git
-cd hookwatch
+cd HookWatch
 make up          # Builds and starts all 4 services
 ```
 
@@ -204,7 +204,7 @@ Interactive API docs available at `/swagger-ui/index.html` when running locally.
 ## Project Structure
 
 ```
-hookwatch/
+HookWatch/
 ├── api/                        # Spring Boot 3.4 — 12 controllers, 10 services, 8 entities
 │   ├── src/main/java/          # controller/ domain/ dto/ filter/ repository/ security/ service/
 │   ├── src/main/resources/     # application.yml (dev + docker) · db/migration/ (V1–V8)
