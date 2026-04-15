@@ -108,20 +108,20 @@ Once healthy, open:
 
 | Service | URL |
 |---------|-----|
-| Dashboard | http://localhost:3000 |
-| API | http://localhost:8080 |
-| Swagger UI | http://localhost:8080/swagger-ui/index.html |
+| Dashboard | http://localhost:3001 |
+| API | http://localhost:8085 |
+| Swagger UI | http://localhost:8085/swagger-ui/index.html |
 
 Demo data is seeded automatically via Flyway V7: 3 agents, ~500 traces with realistic multi-model distribution and pricing.
 
 ### Submit a trace
 
 ```bash
-curl -s http://localhost:8080/api/v1/agents \
+curl -s http://localhost:8085/api/v1/agents \
   -H "X-API-Key: demo-key-hookwatch" | jq '.[0].id'
 # Copy the agent ID, then:
 
-curl -X POST http://localhost:8080/api/v1/traces \
+curl -X POST http://localhost:8085/api/v1/traces \
   -H "X-API-Key: demo-key-hookwatch" \
   -H "Content-Type: application/json" \
   -d '{
