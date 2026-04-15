@@ -1,10 +1,11 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { Webhook } from 'lucide-react'
 import { useAgentStore } from '../stores/useAgentStore'
 import { useTraceStore } from '../stores/useTraceStore'
 import { useSettingsStore } from '../stores/useSettingsStore'
 import TraceTable from '../components/TraceTable'
 import MetricsBar from '../components/MetricsBar'
+import ErrorState from '../components/ErrorState'
 
 export default function Dashboard({ onCompare }: { onCompare?: () => void }) {
   const autoRefreshSeconds = useSettingsStore((s) => s.settings.autoRefreshSeconds)
@@ -24,12 +25,15 @@ export default function Dashboard({ onCompare }: { onCompare?: () => void }) {
     removeTagFromTrace,
   } = useTraceStore()
 
+  const [error, setError] = useState(false)
+
   useEffect(() => { loadTags() }, [loadTags])
 
   useEffect(() => {
     if (!selectedAgentId) return
-    loadTraces(selectedAgentId)
-    const interval = setInterval(() => loadTraces(selectedAgentId), autoRefreshSeconds * 1000)
+    setError(false)
+    loadTraces(selectedAgentId).catch(() => setError(true))
+    const interval = setInterval(() => loadTraces(selectedAgentId).catch(() => setError(true)), autoRefreshSeconds * 1000)
     return () => clearInterval(interval)
   }, [selectedAgentId, loadTraces, autoRefreshSeconds])
 
@@ -91,15 +95,18 @@ export default function Dashboard({ onCompare }: { onCompare?: () => void }) {
       {/* Trace list */}
       <main style={{ flex: 1, overflow: 'auto' }}>
         {tracesLoading && <LoadingState />}
-        {!tracesLoading && !selectedAgentId && (
+        {!tracesLoading && error && selectedAgentId && (
+          <ErrorState message="Failed to load traces" onRetry={() => { setError(false); loadTraces(selectedAgentId) }} />
+        )}
+        {!tracesLoading && !error && !selectedAgentId && (
           <EmptyState title="Select an agent to view traces" subtitle="Use the agent selector above" showIcon>
             {agents.length > 0 && null}
           </EmptyState>
         )}
-        {!tracesLoading && selectedAgentId && traces.length === 0 && (
-          <EmptyState title="No traces yet" subtitle="Traces will appear here once the agent runs" />
+        {!tracesLoading && !error && selectedAgentId && traces.length === 0 && (
+          <EmptyState title="No traces yet" subtitle="No traces yet — send your first webhook to start observing" showIcon />
         )}
-        {!tracesLoading && traces.length > 0 && (
+        {!tracesLoading && !error && traces.length > 0 && (
           <TraceTable
             traces={traces}
             onSelect={selectTrace}
@@ -117,12 +124,11 @@ export default function Dashboard({ onCompare }: { onCompare?: () => void }) {
 
 function LoadingState() {
   return (
-    <div className="page-padding" style={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-      {[...Array(5)].map((_, i) => (
-        <div key={i} style={{
+    <div className="page-padding" style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+      {[...Array(6)].map((_, i) => (
+        <div key={i} className="skeleton" style={{
           height: 44, borderRadius: 6,
-          background: `rgba(255,255,255,${0.025 - i * 0.003})`,
-          marginBottom: 1,
+          marginBottom: 2,
         }} />
       ))}
     </div>

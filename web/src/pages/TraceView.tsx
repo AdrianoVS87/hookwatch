@@ -1,5 +1,5 @@
 import { useEffect, useState, type CSSProperties } from 'react'
-import { ArrowLeft, ChevronDown, ChevronUp, GitBranch, StickyNote, ShieldCheck } from 'lucide-react'
+import { ArrowLeft, ChevronDown, ChevronUp, GitBranch, StickyNote, ShieldCheck, AlertCircle } from 'lucide-react'
 import { useTraceStore } from '../stores/useTraceStore'
 import TraceCanvas from '../components/TraceCanvas'
 import SpanDetail from '../components/SpanDetail'
@@ -23,9 +23,25 @@ export default function TraceView() {
   const [text, setText] = useState('')
   const [author, setAuthor] = useState('adriano')
   const [saving, setSaving] = useState(false)
+  const [traceLoading, setTraceLoading] = useState(false)
+  const [traceError, setTraceError] = useState<string | null>(null)
 
   // Use rawTraces for full list, fall back to filtered traces
   const allTraces = rawTraces.length > 0 ? rawTraces : traces
+
+  /** Load a trace by ID with loading/error tracking. */
+  const handleSelectTrace = async (id: string) => {
+    setTraceLoading(true)
+    setTraceError(null)
+    setActiveSpan(null)
+    try {
+      await selectTrace(id)
+    } catch {
+      setTraceError('Trace not found')
+    } finally {
+      setTraceLoading(false)
+    }
+  }
 
   useEffect(() => {
     if (!selectedTrace) {
@@ -53,12 +69,32 @@ export default function TraceView() {
           <GitBranch size={18} strokeWidth={1.5} style={{ color: 'var(--accent)' }} />
           <h2 style={{ fontSize: 20, fontWeight: 600, color: 'var(--text-primary)', letterSpacing: '-0.02em' }}>Traces</h2>
         </div>
-        {allTraces.length > 0 ? (
+
+        {traceLoading && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 8 }}>
+            <div className="skeleton" style={{ height: 44, borderRadius: 'var(--radius-md)' }} />
+            <div className="skeleton" style={{ height: 200, borderRadius: 'var(--radius-lg)' }} />
+          </div>
+        )}
+
+        {!traceLoading && traceError && (
+          <div style={{
+            display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12,
+            padding: '48px 24px', color: 'var(--text-tertiary)',
+          }}>
+            <AlertCircle size={28} strokeWidth={1.2} style={{ color: 'var(--error)', opacity: 0.7 }} />
+            <p style={{ margin: 0, fontSize: 13, color: 'var(--text-secondary)', fontWeight: 500 }}>
+              {traceError}
+            </p>
+          </div>
+        )}
+
+        {!traceLoading && !traceError && allTraces.length > 0 && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
             <TraceSelector
               traces={allTraces}
               selectedTraceId={null}
-              onSelect={selectTrace}
+              onSelect={handleSelectTrace}
               showNavigation={false}
               showCount={false}
             />
@@ -66,7 +102,8 @@ export default function TraceView() {
               Select a trace above to inspect its span graph.
             </p>
           </div>
-        ) : (
+        )}
+        {!traceLoading && !traceError && allTraces.length === 0 && (
           <p style={{ color: 'var(--text-tertiary)', fontSize: 13 }}>Select a trace from the Dashboard to inspect its span graph.</p>
         )}
       </div>
@@ -109,7 +146,7 @@ export default function TraceView() {
           <TraceSelector
             traces={allTraces}
             selectedTraceId={selectedTrace.id}
-            onSelect={(id) => { selectTrace(id); setActiveSpan(null) }}
+            onSelect={(id) => { void handleSelectTrace(id) }}
             showNavigation={true}
             showCount={true}
           />

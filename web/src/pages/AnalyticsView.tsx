@@ -13,6 +13,7 @@ import type { AnalyticsData, DailyUsage } from '../types'
 import { useAgentStore } from '../stores/useAgentStore'
 import { useTraceStore } from '../stores/useTraceStore'
 import { useSettingsStore } from '../stores/useSettingsStore'
+import ErrorState from '../components/ErrorState'
 
 
 // ── helpers ──────────────────────────────────────────────────────────────────
@@ -271,6 +272,7 @@ export default function AnalyticsView() {
   const [range, setRange] = useState<DateRange>(defaultRange)
   const [data, setData] = useState<AnalyticsData | null>(null)
   const [loading, setLoading] = useState(false)
+  const [error, setError] = useState(false)
   const [usingMock, setUsingMock] = useState(false)
   const [autoEvalRunning, setAutoEvalRunning] = useState(false)
 
@@ -372,8 +374,13 @@ export default function AnalyticsView() {
       </div>
 
       {loading && (
-        <div style={{ color: 'var(--text-tertiary)', fontSize: 13, padding: '40px 0', textAlign: 'center' }}>
-          Loading analytics…
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+          <div className="card-grid">
+            {[...Array(4)].map((_, i) => (
+              <div key={i} className="skeleton" style={{ height: 96, borderRadius: 'var(--radius-lg)' }} />
+            ))}
+          </div>
+          <div className="skeleton" style={{ height: 260, borderRadius: 'var(--radius-lg)' }} />
         </div>
       )}
 
@@ -703,7 +710,7 @@ export default function AnalyticsView() {
         </>
       )}
 
-      {!loading && !data && (
+      {!loading && !data && !error && (
         <div style={{
           display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
           height: 300, gap: 12, color: 'var(--text-tertiary)',
@@ -711,6 +718,17 @@ export default function AnalyticsView() {
           <BarChart3 size={32} strokeWidth={1} style={{ opacity: 0.3 }} />
           <p style={{ margin: 0, fontSize: 13, color: 'var(--text-secondary)' }}>Select an agent to view analytics</p>
         </div>
+      )}
+
+      {!loading && error && (
+        <ErrorState
+          message="Failed to load analytics"
+          onRetry={() => {
+            setError(false)
+            const agentId = selectedAgentId ?? agents[0]?.id
+            if (agentId) load(agentId, range, selectedModel)
+          }}
+        />
       )}
     </div>
   )

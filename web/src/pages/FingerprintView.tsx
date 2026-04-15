@@ -1,7 +1,8 @@
-import { Fragment, useEffect, useMemo, useState } from 'react'
+import { Fragment, useEffect, useMemo, useState, useCallback } from 'react'
 import { AlertTriangle, ChevronDown, ChevronUp } from 'lucide-react'
 import { useAgentStore } from '../stores/useAgentStore'
 import { fetchFingerprints, fetchFingerprintTrend, type FingerprintSummary, type FingerprintTrendPoint } from '../api/fingerprints'
+import ErrorState from '../components/ErrorState'
 
 function last30DaysRange() {
   const to = new Date()
@@ -45,17 +46,15 @@ export default function FingerprintView() {
   const [trends, setTrends] = useState<Record<string, FingerprintTrendPoint[]>>({})
   const [expandedId, setExpandedId] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
+  const [error, setError] = useState(false)
 
   const agentId = selectedAgentId ?? agents[0]?.id ?? null
 
-  useEffect(() => {
-    if (!agentId) {
-      setLoading(false)
-      return
-    }
+  const loadData = useCallback((id: string) => {
     const { from, to } = last30DaysRange()
     setLoading(true)
-    fetchFingerprints(agentId)
+    setError(false)
+    fetchFingerprints(id)
       .then(async (items) => {
         setRows(items)
         if (items.length === 0) return
@@ -64,14 +63,22 @@ export default function FingerprintView() {
             const trend = await fetchFingerprintTrend(fp.id, from, to)
             return [fp.id, trend.trend] as const
           } catch {
-            return [fp.id, [] as import('../api/fingerprints').FingerprintTrendPoint[]] as const
+            return [fp.id, [] as FingerprintTrendPoint[]] as const
           }
         }))
         setTrends(Object.fromEntries(trendEntries))
       })
-      .catch(() => setRows([]))
+      .catch(() => { setRows([]); setError(true) })
       .finally(() => setLoading(false))
-  }, [agentId])
+  }, [])
+
+  useEffect(() => {
+    if (!agentId) {
+      setLoading(false)
+      return
+    }
+    loadData(agentId)
+  }, [agentId, loadData])
 
   return (
     <div className="page-padding" style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
@@ -80,7 +87,19 @@ export default function FingerprintView() {
         <h2 style={{ margin: 0, fontSize: 20, fontWeight: 600 }}>Failure Fingerprints</h2>
       </div>
 
-      <div className="table-responsive" style={{ border: '1px solid var(--border)', borderRadius: 10, overflow: 'hidden', background: 'var(--surface)' }}>
+      {loading && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+          {[...Array(4)].map((_, i) => (
+            <div key={i} className="skeleton" style={{ height: 48, borderRadius: 'var(--radius-md)' }} />
+          ))}
+        </div>
+      )}
+
+      {!loading && error && (
+        <ErrorState message="Failed to load fingerprints" onRetry={() => agentId && loadData(agentId)} />
+      )}
+
+      {!loading && !error && <div className="table-responsive" style={{ border: '1px solid var(--border)', borderRadius: 10, overflow: 'hidden', background: 'var(--surface)' }}>
         <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
           <thead>
             <tr style={{ borderBottom: '1px solid var(--border)' }}>
@@ -132,7 +151,7 @@ export default function FingerprintView() {
             )}
           </tbody>
         </table>
-      </div>
+      </div>}
     </div>
   )
 }

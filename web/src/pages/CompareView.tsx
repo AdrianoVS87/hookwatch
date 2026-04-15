@@ -130,11 +130,25 @@ export default function CompareView({ onBack }: Props) {
       )}
 
       {!loading && error && (
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', flex: 1, gap: 12 }}>
-          <p style={{ color: '#EF4444', fontSize: 13 }}>{error}</p>
-          <button onClick={handleBack} style={{ color: 'var(--accent)', fontSize: 12, background: 'none', border: 'none', cursor: 'pointer' }}>
-            Go back
-          </button>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', flex: 1, gap: 14 }}>
+          <p style={{ color: 'var(--error)', fontSize: 13, margin: 0 }}>{error}</p>
+          <div style={{ display: 'flex', gap: 10 }}>
+            {traceAId && traceBId && (
+              <button
+                onClick={() => loadComparison(traceAId, traceBId)}
+                style={{
+                  padding: '7px 16px', borderRadius: 'var(--radius-md)',
+                  border: '1px solid var(--border)', background: 'var(--surface-2)',
+                  color: 'var(--text-primary)', fontSize: 12, cursor: 'pointer',
+                }}
+              >
+                Retry
+              </button>
+            )}
+            <button onClick={handleBack} style={{ color: 'var(--accent)', fontSize: 12, background: 'none', border: 'none', cursor: 'pointer' }}>
+              Go back
+            </button>
+          </div>
         </div>
       )}
 
