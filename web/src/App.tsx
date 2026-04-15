@@ -30,11 +30,11 @@ const BOTTOM_NAV: Page[] = ['dashboard', 'traces', 'analytics', 'fingerprints', 
 export default function App() {
   const [page, setPage] = useState<Page>('dashboard')
   const openCommandPalette = useUIStore((s) => s.openCommandPalette)
-  const [collapsed, setCollapsed] = useState(window.innerWidth < 1024)
+  const [collapsed, setCollapsed] = useState(window.innerWidth < 769)
 
   useEffect(() => {
     const handler = () => {
-      setCollapsed(window.innerWidth < 1024)
+      setCollapsed(window.innerWidth < 769)
     }
     window.addEventListener('resize', handler)
     return () => window.removeEventListener('resize', handler)
@@ -156,7 +156,7 @@ export default function App() {
               cursor: 'pointer', color: 'var(--text-tertiary)',
               transition: 'background var(--transition)',
             }}
-            onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.background = 'rgba(255,255,255,0.06)' }}
+            onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.background = 'var(--surface-2)' }}
             onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.background = 'var(--surface-2)' }}
           >
             {collapsed ? <ChevronRight size={13} strokeWidth={1.5} /> : <ChevronLeft size={13} strokeWidth={1.5} />}

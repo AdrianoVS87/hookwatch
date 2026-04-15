@@ -236,7 +236,7 @@ export default function TraceTable({ traces, onSelect, onCompare, totalElements,
                 ? 'rgba(99,102,241,0.06)'
                 : isFailed
                   ? 'rgba(239,68,68,0.06)'
-                  : i % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.015)'
+                  : i % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.02)'
             return (
               <motion.tr
                 key={trace.id}
@@ -245,7 +245,7 @@ export default function TraceTable({ traces, onSelect, onCompare, totalElements,
                 transition={{ delay: i * 0.02, duration: 0.15 }}
                 onClick={() => onSelect(trace.id)}
                 style={{
-                  borderBottom: '1px solid rgba(255,255,255,0.04)', cursor: 'pointer',
+                  borderBottom: '1px solid var(--border)', cursor: 'pointer',
                   background: rowBg,
                   borderLeft: isViewing
                     ? '3px solid var(--accent)'
@@ -400,7 +400,7 @@ export default function TraceTable({ traces, onSelect, onCompare, totalElements,
           bottom: 0,
           zIndex: 1,
           padding: '10px 16px',
-          borderTop: '1px solid rgba(255,255,255,0.04)',
+          borderTop: '1px solid var(--border)',
           background: 'var(--surface)',
           fontSize: 11,
           color: 'var(--text-tertiary)',

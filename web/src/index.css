@@ -3,19 +3,19 @@
 *, *::before, *::after { box-sizing: border-box; }
 
 :root {
-  --bg: #080C14;
-  --surface: #0D1117;
-  --surface-2: #161B26;
-  --border: rgba(255,255,255,0.06);
+  --bg: #0f172a;
+  --surface: #1e293b;
+  --surface-2: #273549;
+  --border: #334155;
   --border-focus: rgba(99,102,241,0.5);
-  --text-primary: #F0F4F8;
-  --text-secondary: #8B95A1;
-  --text-tertiary: #4A5568;
-  --accent: #6366F1;
-  --accent-hover: #818CF8;
-  --success: #10B981;
-  --error: #EF4444;
-  --warning: #F59E0B;
+  --text-primary: #f1f5f9;
+  --text-secondary: #94a3b8;
+  --text-tertiary: #64748b;
+  --accent: #6366f1;
+  --accent-hover: #818cf8;
+  --success: #10b981;
+  --error: #ef4444;
+  --warning: #f59e0b;
   --radius-sm: 4px;
   --radius-md: 6px;
   --radius-lg: 10px;
@@ -112,23 +112,23 @@ body {
 /* ── Mobile responsiveness ─────────────────────────────────────────── */
 
 /* Force touch-friendly tap targets */
-@media (max-width: 640px) {
+@media (max-width: 768px) {
   button, input, select, textarea {
-    min-height: 36px;
+    min-height: 44px;
   }
   table { font-size: 12px; }
   th, td { padding: 6px 8px !important; }
 }
 
-/* Hide desktop sidebar on mobile */
-@media (max-width: 640px) {
+/* Hide desktop sidebar on mobile/tablet */
+@media (max-width: 768px) {
   [data-sidebar] { display: none !important; }
   [data-main] { padding-bottom: 56px !important; }
 }
 
-/* Show bottom nav only on mobile */
+/* Show bottom nav only on mobile/tablet */
 [data-bottomnav] { display: none; }
-@media (max-width: 640px) {
+@media (max-width: 768px) {
   [data-bottomnav] {
     display: flex !important;
     position: fixed;
