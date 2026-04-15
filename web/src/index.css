@@ -47,6 +47,7 @@
 html, body, #root {
   height: 100%;
   margin: 0;
+  overflow-x: hidden;
 }
 
 body {
@@ -73,7 +74,7 @@ body {
   .page-padding { padding: 20px 20px; }
 }
 @media (max-width: 480px) {
-  .page-padding { padding: 16px 12px; }
+  .page-padding { padding: 16px 16px; }
 }
 
 /* Responsive card grid — stack on mobile */
@@ -91,6 +92,27 @@ body {
 .table-responsive {
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
+}
+
+/* MetricsBar: stack vertically on mobile */
+@media (max-width: 768px) {
+  .metrics-bar {
+    flex-direction: column;
+  }
+  .metrics-bar > div {
+    border-right: none !important;
+    border-bottom: 1px solid var(--border);
+  }
+  .metrics-bar > div:last-child {
+    border-bottom: none;
+  }
+}
+
+/* Annotation form: stack on mobile */
+@media (max-width: 640px) {
+  .annotation-form {
+    grid-template-columns: 1fr !important;
+  }
 }
 
 /* Trace detail: side-by-side on desktop, stacked on mobile */

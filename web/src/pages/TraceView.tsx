@@ -335,7 +335,7 @@ export default function TraceView() {
 
         {annotationOpen && (
           <div style={{ padding: '0 16px 14px', display: 'grid', gap: 10, maxHeight: 260, overflow: 'auto' }}>
-            <div style={{ display: 'grid', gridTemplateColumns: '140px 1fr auto', gap: 8 }}>
+            <div className="annotation-form" style={{ display: 'grid', gridTemplateColumns: '140px 1fr auto', gap: 8 }}>
               <input
                 value={author}
                 onChange={(e) => setAuthor(e.target.value)}

@@ -27,7 +27,7 @@ export default function SpanDetail({ span, onClose }: Props) {
       exit={{ x: 20, opacity: 0 }}
       transition={{ duration: 0.15, ease: 'easeOut' }}
       style={{
-        width: 320, flexShrink: 0,
+        width: 320, maxWidth: '100vw', flexShrink: 0,
         background: 'var(--surface)',
         borderLeft: '1px solid var(--border)',
         display: 'flex', flexDirection: 'column',

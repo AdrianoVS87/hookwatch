@@ -25,7 +25,7 @@ export default function MetricsBar() {
   ]
 
   return (
-    <div style={{
+    <div className="metrics-bar" style={{
       display: 'flex', gap: 0, flexWrap: 'wrap',
       borderBottom: '1px solid var(--border)',
       background: 'var(--surface)',

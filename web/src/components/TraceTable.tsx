@@ -189,7 +189,7 @@ export default function TraceTable({ traces, onSelect, onCompare, totalElements,
   )
 
   return (
-    <div style={{ overflowX: 'auto' }}>
+    <div className="table-responsive">
       {selectedTraces.length === 2 && onCompare && (
         <div style={{ padding: '8px 16px', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', gap: 8 }}>
           <button
