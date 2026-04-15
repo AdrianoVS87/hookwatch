@@ -116,24 +116,24 @@ function ScoresPanel({ scores }: { scores: Score[] }) {
             <span style={{ fontSize: 12, fontWeight: 500, color: 'var(--text-primary)' }}>{score.name}</span>
             <span style={{
               fontSize: 9, padding: '1px 5px', borderRadius: 3,
-              background: 'rgba(99,102,241,0.1)', color: '#6366F1', fontWeight: 500,
+              background: 'rgba(99,102,241,0.1)', color: 'var(--accent)', fontWeight: 500,
             }}>{score.source}</span>
           </div>
           <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)' }}>
             {score.dataType === 'NUMERIC' && score.numericValue != null && (
               <span style={{
-                color: score.numericValue > 0.7 ? '#10B981' : score.numericValue > 0.4 ? '#F59E0B' : '#EF4444',
+                color: score.numericValue > 0.7 ? 'var(--success)' : score.numericValue > 0.4 ? 'var(--warning)' : 'var(--error)',
               }}>
                 {score.numericValue.toFixed(2)}
               </span>
             )}
             {score.dataType === 'BOOLEAN' && (
-              <span style={{ color: score.booleanValue ? '#10B981' : '#EF4444' }}>
+              <span style={{ color: score.booleanValue ? 'var(--success)' : 'var(--error)' }}>
                 {score.booleanValue ? '\u2713 True' : '\u2717 False'}
               </span>
             )}
             {score.dataType === 'CATEGORICAL' && (
-              <span style={{ color: '#6366F1' }}>{score.stringValue}</span>
+              <span style={{ color: 'var(--accent)' }}>{score.stringValue}</span>
             )}
           </div>
           {score.comment && (
@@ -152,7 +152,7 @@ function CodePane({ text, isError }: { text: string | null; isError?: boolean })
   return (
     <pre style={{
       margin: 0, fontSize: 11, lineHeight: 1.6,
-      color: isError ? '#EF4444' : 'var(--text-secondary)',
+      color: isError ? 'var(--error)' : 'var(--text-secondary)',
       fontFamily: '"SF Mono", "Fira Code", "Fira Mono", monospace',
       whiteSpace: 'pre-wrap', wordBreak: 'break-word',
     }}>{text}</pre>

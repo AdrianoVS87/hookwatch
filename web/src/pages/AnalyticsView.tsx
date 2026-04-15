@@ -45,12 +45,12 @@ function fmtDateShort(iso: string): string {
 const GRID_COLOR = 'rgba(255,255,255,0.06)'
 const AXIS_COLOR = 'rgba(255,255,255,0.25)'
 const TOOLTIP_STYLE: React.CSSProperties = {
-  background: '#1A2235',
-  border: '1px solid rgba(255,255,255,0.1)',
+  background: 'var(--surface)',
+  border: '1px solid var(--border)',
   borderRadius: 8,
   fontSize: 12,
   color: 'var(--text-primary)',
-  boxShadow: '0 4px 16px rgba(0,0,0,0.5)',
+  boxShadow: 'var(--shadow-lg)',
   padding: '10px 14px',
 }
 

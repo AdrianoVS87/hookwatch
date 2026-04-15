@@ -57,7 +57,7 @@ function relativeTime(date: string): string {
 function ScoreBadge({ score }: { score: Score }) {
   if (score.dataType === 'NUMERIC' && score.numericValue != null) {
     const v = score.numericValue
-    const color = v > 0.7 ? '#10B981' : v > 0.4 ? '#F59E0B' : '#EF4444'
+    const color = v > 0.7 ? 'var(--success)' : v > 0.4 ? 'var(--warning)' : 'var(--error)'
     return (
       <span style={{
         display: 'inline-flex', alignItems: 'center', gap: 4,
@@ -73,7 +73,7 @@ function ScoreBadge({ score }: { score: Score }) {
     return (
       <span style={{
         fontSize: 10, fontWeight: 500, marginRight: 4,
-        color: ok ? '#10B981' : '#EF4444',
+        color: ok ? 'var(--success)' : 'var(--error)',
       }}>
         {ok ? '\u2713' : '\u2717'} {score.name}
       </span>
@@ -84,7 +84,7 @@ function ScoreBadge({ score }: { score: Score }) {
       <span style={{
         display: 'inline-block', fontSize: 9, fontWeight: 500,
         padding: '1px 5px', borderRadius: 3, marginRight: 4,
-        background: 'rgba(99,102,241,0.1)', color: '#6366F1',
+        background: 'rgba(99,102,241,0.1)', color: 'var(--accent)',
       }}>
         {score.name}: {score.stringValue}
       </span>

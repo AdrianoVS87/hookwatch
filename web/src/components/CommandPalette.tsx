@@ -134,8 +134,8 @@ export default function CommandPalette() {
                         display: 'flex', alignItems: 'center', justifyContent: 'center',
                       }}>
                         {item.type === 'agent'
-                          ? <User size={13} strokeWidth={1.5} style={{ color: '#6366F1' }} />
-                          : <GitBranch size={13} strokeWidth={1.5} style={{ color: '#10B981' }} />
+                          ? <User size={13} strokeWidth={1.5} style={{ color: 'var(--accent)' }} />
+                          : <GitBranch size={13} strokeWidth={1.5} style={{ color: 'var(--success)' }} />
                         }
                       </div>
                       <div style={{ overflow: 'hidden' }}>

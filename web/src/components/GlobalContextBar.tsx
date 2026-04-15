@@ -120,8 +120,8 @@ export default function GlobalContextBar() {
       {/* Live indicator when agent selected */}
       {selectedAgentId && (
         <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 5, flexShrink: 0 }}>
-          <span style={{ width: 5, height: 5, borderRadius: '50%', background: '#10B981', animation: 'pulse 2s infinite', display: 'block' }} />
-          <span style={{ fontSize: 10, fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', color: '#10B981' }}>
+          <span style={{ width: 5, height: 5, borderRadius: '50%', background: 'var(--success)', animation: 'pulse 2s infinite', display: 'block' }} />
+          <span style={{ fontSize: 10, fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--success)' }}>
             Live
           </span>
         </div>
