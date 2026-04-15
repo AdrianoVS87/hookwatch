@@ -14,7 +14,19 @@
 
 **[Live Demo](https://hookwatch-one.vercel.app)** · **[API Reference](docs/API.md)** · **[Architecture Decisions](docs/adr/)**
 
-> **Screenshots:** see [`docs/screenshots/`](docs/screenshots/) — pending addition.
+> **Screenshots:** real app captures in [`docs/screenshots/`](docs/screenshots/).
+
+---
+
+## Product Screenshots
+
+### Dashboard (live data)
+
+![HookWatch Dashboard](docs/screenshots/dashboard.png)
+
+### Trace Detail (execution graph + spans)
+
+![HookWatch Trace Detail](docs/screenshots/trace-detail.png)
 
 ---
 
