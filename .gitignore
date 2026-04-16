@@ -33,3 +33,4 @@ improve/
 docs/ADRIANO_EXECUTION_MEGA_PROMPT.md
 *.prompt.md
 .ai-memory/
+.vercel
