@@ -1,0 +1,6 @@
+api/target
+**/target
+**/node_modules
+.openclaw
+memory
+docs/adr
